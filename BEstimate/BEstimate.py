@@ -1174,79 +1174,72 @@ class Variant:
 		self.cosmic, self.cosmic_id = None, None
 		self.ancestral_populations = None
 
-    def extract_vep_obj(self, vep_json):
-        for vep in vep_json:
-            if vep["input"] == self.hgvs:
-                self.vep = vep
+	def extract_vep_obj(self, vep_json):
+		"""
+		Extract VEP response data for this variant from batch response.
 
-    def extract_hgvsp(self, hgvsp, which):
-        aa_3to1 = {
-            "Ala": "A",
-            "Arg": "R",
-            "Asn": "N",
-            "Asp": "D",
-            "Cys": "C",
-            "Glu": "E",
-            "Gln": "Q",
-            "Gly": "G",
-            "His": "H",
-            "Ile": "I",
-            "Leu": "L",
-            "Lys": "K",
-            "Met": "M",
-            "Phe": "F",
-            "Pro": "P",
-            "Ser": "S",
-            "Thr": "T",
-            "Trp": "W",
-            "Tyr": "Y",
-            "Val": "V",
-            "Ter": "*",
-        }
-        if hgvsp is not None:
-            protein_change = hgvsp.split("p.")[1]
-            if len(protein_change.split("delins")) == 1:
-                # SNP
-                if len(protein_change.split("=")) == 1:
-                    if len(protein_change.split("?")) == 1:
-                        if len(protein_change.split("ext")) == 1:
-                            if which == "old_aa":
-                                return aa_3to1[protein_change[:3]]
-                            if which == "new_aa":
-                                return aa_3to1[protein_change[-3:]]
-                            if which == "position":
-                                return protein_change[3:-3]
-                        else:
-                            # Extension for termination or start Ter629GlnextTer1 | Met1ext-5
-                            if protein_change[:3] == "Ter":
-                                alteration = protein_change.split("ext")[0]
-                                extension_amount = (
-                                    int(protein_change.split("ext")[1][3:]) - 1
-                                )
-                                if which == "old_aa":
-                                    return aa_3to1[alteration[:3]]
-                                if which == "new_aa":
-                                    return (
-                                        aa_3to1[alteration[-3:]]
-                                        + "X%s" % extension_amount
-                                        + "*"
-                                    )
-                                if which == "position":
-                                    return alteration[3:-3]
-                            else:
-                                if which == "old_aa":
-                                    return aa_3to1[protein_change[:3]]
-                                if which == "new_aa":
-                                    extension_amount = (
-                                        abs(int(protein_change.split("ext")[1])) - 1
-                                    )
-                                    return (
-                                        aa_3to1[protein_change[:3]]
-                                        + "X-%s" % extension_amount
-                                        + aa_3to1[protein_change[:3]]
-                                    )
-                                if which == "position":
-                                    return protein_change.split("ext")[0][3:]
+		Searches through the VEP batch response JSON to find the data
+		corresponding to this variant's HGVS string and stores it in
+		the vep attribute.
+
+		:param vep_json: VEP API response containing multiple variant results
+		:type vep_json: list
+		"""
+		for vep in vep_json:
+			if vep["input"] == self.hgvs:
+				self.vep = vep
+
+	def extract_hgvsp(self, hgvsp, which):
+		"""
+		Parse HGVS protein nomenclature to extract specific components.
+
+		Parses protein-level HGVS nomenclature to extract amino acid information
+		including original amino acid, new amino acid, and position.
+
+		:param hgvsp: HGVS protein nomenclature string
+		:type hgvsp: str
+		:param which: Component to extract ('old_aa', 'new_aa', or 'position')
+		:type which: str
+
+		:return: Requested component from HGVS protein nomenclature
+		:rtype: str or None
+		"""
+		aa_3to1 = {"Ala": "A", "Arg": "R", "Asn": "N", "Asp": "D", "Cys": "C", "Glu": "E", "Gln": "Q",
+				   "Gly": "G", "His": "H", "Ile": "I", "Leu": "L", "Lys": "K", "Met": "M", "Phe": "F",
+				   "Pro": "P", "Ser": "S", "Thr": "T", "Trp": "W", "Tyr": "Y", "Val": "V", "Ter": "*"}
+		if hgvsp is not None:
+			protein_change = hgvsp.split("p.")[1]
+			if len(protein_change.split("delins")) == 1:
+				# SNP
+				if len(protein_change.split("=")) == 1:
+					if len(protein_change.split("?")) == 1:
+						if len(protein_change.split("ext")) == 1:
+							if which == "old_aa":
+								return aa_3to1[protein_change[:3]]
+							if which == "new_aa":
+								return aa_3to1[protein_change[-3:]]
+							if which == "position":
+								return protein_change[3:-3]
+						else:
+							# Extension for termination or start Ter629GlnextTer1 | Met1ext-5
+							if protein_change[:3] == "Ter":
+								alteration = protein_change.split("ext")[0]
+								extension_amount = int(protein_change.split("ext")[1][3:]) - 1
+								if which == "old_aa":
+									return aa_3to1[alteration[:3]]
+								if which == "new_aa":
+									return aa_3to1[alteration[-3:]] + "X%s" % extension_amount + "*"
+								if which == "position":
+									return alteration[3:-3]
+							else:
+								if which == "old_aa":
+									return aa_3to1[protein_change[:3]]
+								if which == "new_aa":
+									extension_amount = abs(int(protein_change.split("ext")[1])) - 1
+									return aa_3to1[protein_change[:3]] + "X-%s" % extension_amount + aa_3to1[
+										protein_change[:3]]
+								if which == "position":
+									return protein_change.split("ext")[0][3:]
 
                     else:
                         # Start codon lost - Met1? | MetAla1_?2
@@ -1324,33 +1317,26 @@ class Variant:
         else:
             return None
 
-    def extract_consequences(self):
-        consequence_terms = list()
-        ancestral_populations = list()
-        # Dictionary to find the chemical properperty change due to the edit
-        aa_chem = {
-            "G": "Non-Polar",
-            "A": "Non-Polar",
-            "V": "Non-Polar",
-            "C": "Polar",
-            "P": "Non-Polar",
-            "L": "Non-Polar",
-            "I": "Non-Polar",
-            "M": "Non-Polar",
-            "W": "Non-Polar",
-            "F": "Non-Polar",
-            "S": "Polar",
-            "T": "Polar",
-            "Y": "Polar",
-            "N": "Polar",
-            "Q": "Polar",
-            "K": "Charged",
-            "R": "Charged",
-            "H": "Charged",
-            "D": "Charged",
-            "E": "Charged",
-            "*": "-",
-        }
+	def extract_consequences(self):
+		"""
+		Extract and process variant consequences from VEP response data.
+
+		Parses the VEP (Variant Effect Predictor) response to extract variant
+		consequences, protein effects, clinical significance, and other annotations.
+		Sets multiple object attributes with processed consequence information.
+
+		.. note::
+			This method processes regulatory features, motif features, transcript
+			consequences, and clinical annotations from the VEP response. It also
+			determines amino acid chemical property changes and clinical significance.
+		"""
+		consequence_terms = list()
+		ancestral_populations = list()
+		# Dictionary to find the chemical properperty change due to the edit
+		aa_chem = {"G": "Non-Polar", "A": "Non-Polar", "V": "Non-Polar", "C": "Polar", "P": "Non-Polar",
+				   "L": "Non-Polar", "I": "Non-Polar", "M": "Non-Polar", "W": "Non-Polar", "F": "Non-Polar",
+				   "S": "Polar", "T": "Polar", "Y": "Polar", "N": "Polar", "Q": "Polar", "K": "Charged",
+				   "R": "Charged", "H": "Charged", "D": "Charged", "E": "Charged", "*": "-"}
 
         if "allele_string" in self.vep.keys():
             self.allele = self.vep["allele_string"]
@@ -2105,15 +2091,34 @@ def find_editable_nucleotide(crispr_df, searched_nucleotide, activity_window, pa
 def extract_hgvs_df(edit_df, ensembl_object, transcript_id, edited_nucleotide,
 					new_nucleotide, activity_window, mutations):
 	"""
-	Collect Ensembl VEP information for given edits
-	:param edit_df: Edit data frame created with find_editable_nucleotide()
-	:param ensembl_object: The Ensembl Object created with Ensembl().
-	:param transcript_id: Ensembl Transcript id for the filtration
-	:param edited_nucleotide: The interested nucleotide which will be changed with BE.
-	:param new_nucleotide: The new nucleotide which will be changed to with BE.
-	:param activity_window: The location of the activity window on the protospacer sequence.
-	:param mutations: Given mutation list from the user
-	:return hgvs_df: The HGVS notations of all possible variants
+	Generate HGVS nomenclature for base editing variants.
+
+	Creates standardized HGVS (Human Genome Variation Society) nomenclature
+	for all potential base editing sites identified in the analysis. Handles
+	both genomic and transcript-level coordinate systems.
+
+	:param edit_df: DataFrame containing editable nucleotide positions
+	:type edit_df: pandas.DataFrame
+	:param ensembl_object: Ensembl object with gene and transcript information
+	:type ensembl_object: Ensembl
+	:param transcript_id: Specific Ensembl transcript ID for analysis
+	:type transcript_id: str
+	:param edited_nucleotide: Original nucleotide to be edited
+	:type edited_nucleotide: str
+	:param new_nucleotide: Target nucleotide after base editing
+	:type new_nucleotide: str
+	:param activity_window: Activity window positions on protospacer (1-indexed)
+	:type activity_window: list
+	:param mutations: List of user-provided genomic mutations
+	:type mutations: list or None
+
+	:return: DataFrame containing HGVS nomenclature for all variants
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function handles strand orientation conversions and generates
+		both genomic (g.) and coding sequence (c.) HGVS nomenclature as
+		appropriate for VEP analysis.
 	"""
 	# For (-) direction crisprs, base reversion should be done.
 	nucleotide_dict = {"A": "T", "T": "A", "G": "C", "C": "G"}
@@ -2739,55 +2744,58 @@ def annotate_edits(ensembl_object, vep_df, uniprot_id):
 
 
 def extract_pis(pis):
-    """
-    Curating the protein interaction sites from the YULab data
-    :param pis: Interaction string from YUlab data (row --> P_IRES)
-    :return: List of interacting uniprot indices
-    """
-    sites = list()
-    if pis != "[]":
-        for site in pis.split(","):
-            if site[0] == "[" and site[-1] != "]":
-                s_first = site[1:]
-                if len(s_first.split("-")) > 1:
-                    for s in list(
-                        range(
-                            int(s_first.split("-")[0]), int(s_first.split("-")[1]) + 1
-                        )
-                    ):
-                        sites.append(int(s))
-                else:
-                    sites.append(int(s_first))
-            elif site[-1] == "]" and site[0] != "[":
-                s_last = site[:-1]
-                if len(s_last.split("-")) > 1:
-                    for s in list(
-                        range(int(s_last.split("-")[0]), int(s_last.split("-")[1]) + 1)
-                    ):
-                        sites.append(int(s))
-                else:
-                    sites.append(int(s_last))
-            elif site[-1] == "]" and site[0] == "[":
-                s_only = site[1:-1]
-                if len(s_only.split("-")) > 1:
-                    for s in list(
-                        range(int(s_only.split("-")[0]), int(s_only.split("-")[1]) + 1)
-                    ):
-                        sites.append(int(s))
-                else:
-                    sites.append(int(s_only))
-            else:
-                if len(site.split("-")) > 1:
-                    for s in list(
-                        range(int(site.split("-")[0]), int(site.split("-")[1]) + 1)
-                    ):
-                        sites.append(int(s))
-                else:
-                    sites.append(int(site))
-        sites.sort()
-        return sites
-    else:
-        return None
+	"""
+	Extract protein interaction site positions from YULab data format.
+
+	Parses protein interaction site strings from the YULab database format
+	to extract individual amino acid positions involved in protein-protein
+	interactions. Handles various formatting patterns including ranges.
+
+	:param pis: Protein interaction site string from YULab data
+	:type pis: str
+
+	:return: List of amino acid positions involved in protein interactions
+	:rtype: list or None
+
+	.. note::
+		This function handles multiple string formats including individual
+		positions, ranges (e.g., "15-20"), and bracketed notations from
+		the YULab protein interaction database.
+	"""
+	sites = list()
+	if pis != "[]":
+		for site in pis.split(","):
+			if site[0] == "[" and site[-1] != "]":
+				s_first = site[1:]
+				if len(s_first.split("-")) > 1:
+					for s in list(range(int(s_first.split("-")[0]), int(s_first.split("-")[1]) + 1)):
+						sites.append(int(s))
+				else:
+					sites.append(int(s_first))
+			elif site[-1] == "]" and site[0] != "[":
+				s_last = site[:-1]
+				if len(s_last.split("-")) > 1:
+					for s in list(range(int(s_last.split("-")[0]), int(s_last.split("-")[1]) + 1)):
+						sites.append(int(s))
+				else:
+					sites.append(int(s_last))
+			elif site[-1] == "]" and site[0] == "[":
+				s_only = site[1:-1]
+				if len(s_only.split("-")) > 1:
+					for s in list(range(int(s_only.split("-")[0]), int(s_only.split("-")[1]) + 1)):
+						sites.append(int(s))
+				else:
+					sites.append(int(s_only))
+			else:
+				if len(site.split("-")) > 1:
+					for s in list(range(int(site.split("-")[0]), int(site.split("-")[1]) + 1)):
+						sites.append(int(s))
+				else:
+					sites.append(int(site))
+		sites.sort()
+		return sites
+	else:
+		return None
 
 
 def collect_pis(uniprot):
@@ -3124,76 +3132,47 @@ def summarise_3di(list_of_partners):
 
 
 def summarise_guides(last_df):
-    summary_df = pandas.DataFrame(
-        index=list(range(0, len(last_df.groupby(["CRISPR_PAM_Sequence"])))),
-        columns=[
-            "Hugo_Symbol",
-            "CRISPR_PAM_Sequence",
-            "CRISPR_PAM_Location",
-            "gRNA_Target_Sequence",
-            "gRNA_Target_Location",
-            "gRNA_flanking_sequences",
-            "Edit_Location",
-            "Direction",
-            "Transcript_ID",
-            "Exon_ID",
-            "Protein_ID",
-            "guide_in_CDS",
-            "Edit_in_Exon",
-            "Edit_in_CDS",
-            "mutation_on_guide",
-            "guide_change_mutation",
-            "mutation_on_window",
-            "mutation_on_PAM",
-            "# Edits/guide",
-            "Poly_T",
-            "GC%",
-            "allele",
-            "cDNA_Change",
-            "CDS_Position",
-            "Protein_Position_ensembl",
-            "Protein_Position",
-            "Protein_Change",
-            "Edited_AA",
-            "Edited_AA_Prop",
-            "New_AA",
-            "New_AA_Prop",
-            "is_stop",
-            "is_synonymous",
-            "proline_addition",
-            "variant_classification",
-            "consequence_terms",
-            "most_severe_consequence",
-            "variant_biotype",
-            "Regulatory_ID",
-            "Motif_ID",
-            "TFs_on_motif",
-            "polyphen_prediction",
-            "sift_prediction",
-            "impact",
-            "is_clinical",
-            "clinical_id",
-            "clinical_significance",
-            "cosmic_id",
-            "clinvar_id",
-            "ancestral_populations",
-            "swissprot_vep",
-            "uniprot_provided",
-            "Domain",
-            "curated_Domain",
-            "PTM",
-            "is_disruptive_interface_EXP",
-            "disrupted_PDB_int_partners",
-            "disrupted_PDB_int_genes",
-            "is_disruptive_interface_MOD",
-            "disrupted_I3D_int_partners",
-            "disrupted_I3D_int_genes",
-            "is_disruptive_interface_PRED",
-            "disrupted_Eclair_int_partners",
-            "disrupted_Eclair_int_genes",
-        ],
-    )
-    # cosmic_freq
+	"""
+	Create summary report of gRNA guides with aggregated annotations.
+
+	Consolidates all base editing analysis results by gRNA guide, aggregating
+	multiple edit sites per guide and their associated annotations including
+	protein effects, clinical significance, and functional predictions.
+
+	:param last_df: Complete DataFrame with all edit annotations
+	:type last_df: pandas.DataFrame
+
+	:return: Summary DataFrame with one row per unique gRNA guide
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function groups edits by CRISPR_PAM_Sequence and aggregates
+		all associated annotations, consequence predictions, and functional
+		effects into a comprehensive summary for each guide.
+	"""
+	summary_df = pandas.DataFrame(index=list(range(0, len(last_df.groupby(["CRISPR_PAM_Sequence"])))),
+								  columns=["Hugo_Symbol", "CRISPR_PAM_Sequence", "CRISPR_PAM_Location",
+										   "gRNA_Target_Sequence", "gRNA_Target_Location", "gRNA_flanking_sequences",
+										   "Edit_Location", "Direction", "Transcript_ID", "Exon_ID", "Protein_ID",
+										   "guide_in_CDS", "Edit_in_Exon", "Edit_in_CDS", "mutation_on_guide",
+										   "guide_change_mutation", "mutation_on_window", "mutation_on_PAM",
+										   "# Edits/guide", "Poly_T", "GC%", "allele", "cDNA_Change",
+										   "CDS_Position", "Protein_Position_ensembl", "Protein_Position",
+										   "Protein_Change", "Edited_AA", "Edited_AA_Prop", "New_AA", "New_AA_Prop",
+										   "is_stop",
+										   "is_synonymous", "proline_addition", "variant_classification",
+										   "consequence_terms",
+										   "most_severe_consequence", "variant_biotype", "Regulatory_ID",
+										   "Motif_ID", "TFs_on_motif", "polyphen_prediction", "sift_prediction",
+										   "impact", "is_clinical", "clinical_id", "clinical_significance", "cosmic_id",
+										   "clinvar_id", "ancestral_populations", "swissprot_vep", "uniprot_provided",
+										   "Domain", "curated_Domain", "PTM", "is_disruptive_interface_EXP",
+										   "disrupted_PDB_int_partners", "disrupted_PDB_int_genes",
+										   "is_disruptive_interface_MOD",
+										   "disrupted_I3D_int_partners", "disrupted_I3D_int_genes",
+										   "is_disruptive_interface_PRED",
+										   "disrupted_Eclair_int_partners", "disrupted_Eclair_int_genes"])
+	# cosmic_freq
 
     i = 0
     for guide, guide_df in last_df.groupby("CRISPR_PAM_Sequence"):
