@@ -1417,18 +1417,39 @@ def extract_grna_sites(hugo_symbol, pam_sequence, searched_nucleotide,
 					   activity_window, pam_window, protospacer_length,
 					   flan, flan_3, flan_5, ensembl_object):
 	"""
-	Extracting the gRNA targeted sites having editable nucleotide(s) on the interested genes
-	:param hugo_symbol: The Hugo Symbol of the interested gene.
-	:param pam_sequence: The sequence pattern of the PAM region (NGG/NG etc)
-	:param searched_nucleotide: The interested nucleotide which will be changed with BE
-	:param activity_window: The location of the activity windiw on the protospacer sequence.
-	:param pam_window: The location of the PAM sequence when 1st index of the protospacer is 1.
-	:param protospacer_length: The length of protospacer.
-	:param flan: The boolean parameter if the user wants to add flanking regions of the gRNAs
-	:param flan_3: The number of nucleotides which will be added 3' flanking region
-	:param flan_5: The number of nucleotides which will be added 5' flanking region
-	:param ensembl_object: The Ensembl Object created with Ensembl().
-	:return crispr_df: A data frame having sequence, location and direction information of the CRISPRs.
+	Extract gRNA target sites containing editable nucleotides for base editing.
+
+	Identifies all potential gRNA target sites within the gene sequence that contain
+	the specified nucleotide within the activity window. Creates a comprehensive
+	dataframe with gRNA sequences, locations, and relevant genomic annotations.
+
+	:param hugo_symbol: HGNC gene symbol for the target gene
+	:type hugo_symbol: str
+	:param pam_sequence: PAM sequence pattern (e.g., 'NGG', 'NG')
+	:type pam_sequence: str
+	:param searched_nucleotide: Nucleotide to be edited by base editor
+	:type searched_nucleotide: str
+	:param activity_window: Activity window positions on protospacer (1-indexed)
+	:type activity_window: list
+	:param pam_window: PAM position relative to protospacer start (1-indexed)
+	:type pam_window: list
+	:param protospacer_length: Length of the protospacer sequence
+	:type protospacer_length: int
+	:param flan: Whether to include flanking sequences for gRNAs
+	:type flan: bool
+	:param flan_3: Number of nucleotides in 3' flanking region
+	:type flan_3: str
+	:param flan_5: Number of nucleotides in 5' flanking region
+	:type flan_5: str
+	:param ensembl_object: Ensembl object containing gene sequence and annotation data
+	:type ensembl_object: Ensembl
+
+	:return: DataFrame containing gRNA sites with annotations
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function processes both forward and reverse strand orientations
+		and includes transcript, exon, and CDS annotations for each gRNA site.
 	"""
 
 	print("Sequence is preparing...")
@@ -1587,16 +1608,32 @@ def check_genome_for_mutation(genomic_range, direction, mutations, window_type, 
 def find_editable_nucleotide(crispr_df, searched_nucleotide, activity_window, pam_window,
 							 ensembl_object, mutations):
 	"""
-	Finding editable nucleotides and their genomic coordinates
-	:param crispr_df: A data frame having sequence, location and direction information of
-	the CRISPRs from extract_crisprs().
-	:param searched_nucleotide: The interested nucleotide which will be changed with BE
-	:param activity_window: The location of the activity window on the protospacer sequence.
-	:param pam_window: The location of the PAM sequence when 1st index of the protospacer is 1.
-	:param ensembl_object: The Ensembl Object created with Ensembl().
-	:param mutations: Given mutation list from the user
-	:return edit_df: A data frame having sequence, edit_location, location and direction
-	information of the CRISPRs.
+	Find editable nucleotides within gRNA activity windows and map to genomic coordinates.
+
+	Identifies specific nucleotides within the activity window of each gRNA that can
+	be targeted for base editing. Maps these positions to genomic coordinates and
+	incorporates mutation information if provided.
+
+	:param crispr_df: DataFrame containing gRNA sequence, location and direction information
+	:type crispr_df: pandas.DataFrame
+	:param searched_nucleotide: Target nucleotide to be edited by base editor
+	:type searched_nucleotide: str
+	:param activity_window: Activity window positions on protospacer (1-indexed)
+	:type activity_window: list
+	:param pam_window: PAM position relative to protospacer start (1-indexed)
+	:type pam_window: list
+	:param ensembl_object: Ensembl object containing gene sequence and annotation data
+	:type ensembl_object: Ensembl
+	:param mutations: List of user-provided genomic mutations to consider
+	:type mutations: list or None
+
+	:return: DataFrame with editable nucleotide positions and genomic coordinates
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function processes each gRNA from the input DataFrame and identifies
+		all editable positions within the activity window, handling both strand
+		orientations and mutation contexts.
 	"""
 
 	actual_seq_range = ensembl_object.gene_range
@@ -1971,12 +2008,28 @@ def extract_hgvs_df(edit_df, ensembl_object, transcript_id, edited_nucleotide,
 
 def retrieve_vep_info(hgvs_df, ensembl_object, uniprot, transcript_id=None):
 	"""
-	Collect Ensembl VEP information for given edits
-	:param hgvs_df: The HGVS notations of all possible variants
-	:param ensembl_object: The Ensembl Object created with Ensembl().
-	:param transcript_id: The interested Ensembl transcript id
-	:param uniprot: User defined uniprot if given
-	:return uniprot_results: The Uniprot IDs in which edit occurs (swissprot or trembl)
+	Retrieve variant effect predictions using Ensembl VEP API.
+
+	Collects comprehensive variant annotation data from the Ensembl Variant Effect
+	Predictor (VEP) for all base edits identified in the analysis. Includes
+	consequence predictions, protein effects, and clinical significance.
+
+	:param hgvs_df: DataFrame containing HGVS nomenclature for all variants
+	:type hgvs_df: pandas.DataFrame
+	:param ensembl_object: Ensembl object containing gene and transcript information
+	:type ensembl_object: Ensembl
+	:param uniprot: User-specified UniProt accession ID
+	:type uniprot: str or None
+	:param transcript_id: Specific Ensembl transcript ID to analyze
+	:type transcript_id: str or None
+
+	:return: DataFrame enriched with VEP annotation data
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function makes batch requests to the VEP API for efficient processing.
+		It handles rate limiting and includes comprehensive variant consequence
+		predictions, pathogenicity scores, and clinical annotations.
 	"""
 
 	chromosome, strand = ensembl_object.chromosome, ensembl_object.strand
@@ -2131,12 +2184,26 @@ def retrieve_vep_info(hgvs_df, ensembl_object, uniprot, transcript_id=None):
 
 def annotate_edits(ensembl_object, vep_df, uniprot_id):
 	"""
-	Adding Uniprot API Information on VEP DF
-	:param ensembl_object: The object of the Ensembl from Ensembl API
-	:param vep_df: The data frame filled with the information from VEP API
-	:param uniprot_id: USer defined Uniprot ID - used as given
-	Ensembl Protein ID to Uniprot IDs (SwissProt/Reviewed)
-	:return: analysis_df: The data frame enriched with the information from Uniprot API
+	Annotate base edits with UniProt protein domain and PTM information.
+
+	Enriches the VEP (Variant Effect Predictor) dataframe with additional protein
+	annotations from UniProt including protein domains, post-translational
+	modifications, and sequence mapping information.
+
+	:param ensembl_object: Ensembl object containing gene and protein sequence data
+	:type ensembl_object: Ensembl
+	:param vep_df: DataFrame containing VEP annotation results
+	:type vep_df: pandas.DataFrame
+	:param uniprot_id: User-specified UniProt accession ID (if provided)
+	:type uniprot_id: str or None
+
+	:return: DataFrame enriched with UniProt protein domain and PTM annotations
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function performs sequence alignment between Ensembl and UniProt
+		protein sequences when direct mapping is not available. It adds columns
+		for protein domains, curated domains, and post-translational modifications.
 	"""
 
 	uniprot_df = vep_df.copy()
@@ -2814,7 +2881,26 @@ def summarise_guides(last_df):
 
 def run_offtargets(genome: str, file_name: str, final_df: str) -> bool:
 	"""
-    Get the offtarget information and output to a detailed and a summary file
+	Perform off-target analysis for identified gRNA sequences.
+
+	Analyzes potential off-target sites for the gRNAs identified in the BEstimate
+	analysis using the CRISPRAnalyser tool. Generates detailed and summary reports
+	of off-target predictions.
+
+	:param genome: Genome file name/prefix for off-target analysis
+	:type genome: str
+	:param file_name: Base name for input and output files
+	:type file_name: str
+	:param final_df: Suffix for the input dataframe file
+	:type final_df: str
+
+	:return: True if off-targets were found and analyzed, False otherwise
+	:rtype: bool
+
+	.. note::
+		This function requires pre-built genome indices and databases for
+		off-target analysis. The analysis uses binary index files and
+		SQLite databases created by the x_genome.py script.
 	"""
 	print(f"Summary Data Frame was read from {file_name}{final_df}\n")
 
@@ -2839,8 +2925,29 @@ def run_offtargets(genome: str, file_name: str, final_df: str) -> bool:
 
 def main():
 	"""
-	Run whole script with the input from terminal
-	:return:
+	Execute the complete BEstimate analysis pipeline.
+
+	This is the main execution function that orchestrates the entire base editor
+	analysis workflow including gene sequence retrieval, gRNA site identification,
+	variant effect prediction, and optional off-target analysis.
+
+	The function processes command line arguments and runs the analysis pipeline
+	with the following main steps:
+
+	1. Extract gene information from Ensembl
+	2. Identify potential gRNA target sites
+	3. Find editable nucleotides within activity windows
+	4. Perform VEP annotation (if requested)
+	5. Add protein domain and PTM annotations
+	6. Generate summary reports
+	7. Perform off-target analysis (if requested)
+
+	:raises SystemExit: If no corresponding Ensembl Gene ID is found
+
+	.. note::
+		This function uses global variables for arguments and data paths.
+		It creates output files in the specified output directory and
+		prints progress messages to stdout.
 	"""
 
 	global args
