@@ -19,6 +19,20 @@ from Bio.pairwise2 import format_alignment
 # Take inputs
 
 def take_input():
+	"""
+	Parse command line arguments for BEstimate base editor analysis.
+
+	This function sets up an argument parser to handle all the input parameters
+	required for base editor site analysis including gene information, PAM sequences,
+	activity windows, and output options.
+
+	:return: Dictionary containing all parsed command line arguments
+	:rtype: dict
+
+	.. note::
+		This function configures and parses command line arguments using argparse.
+		Default values are provided for most optional parameters.
+	"""
 	parser = argparse.ArgumentParser(prog="BEstimate",
 									 usage="%(prog)s [inputs]",
 									 description="""
@@ -115,8 +129,35 @@ def take_input():
 
 
 class Uniprot:
+	"""
+	A class for interacting with the UniProt API to retrieve protein information.
+
+	This class handles UniProt protein data retrieval including sequence information,
+	protein domains, post-translational modifications (PTMs), and mutagenesis data.
+	It provides methods to extract and analyze protein features for base editor analysis.
+
+	:param uniprotid: UniProt accession identifier for the protein of interest
+	:type uniprotid: str
+
+	:ivar uniprotid: UniProt accession identifier
+	:ivar reviewed: Whether the UniProt entry is reviewed (SwissProt) or unreviewed (TrEMBL)
+	:ivar sequence: Protein amino acid sequence
+	:ivar domains: Dictionary of protein domains and their positions
+	:ivar phosphorylation_sites: Dictionary of phosphorylation sites and descriptions
+	:ivar ubiquitination_sites: Dictionary of ubiquitination sites and descriptions
+	:ivar methylation_sites: Dictionary of methylation sites and descriptions
+	:ivar acetylation_sites: Dictionary of acetylation sites and descriptions
+	:ivar mutagenesis: Dictionary of mutagenesis data from UniProt
+	:ivar server: Base URL for UniProt API
+	"""
 
 	def __init__(self, uniprotid):
+		"""
+		Initialize UniProt object with protein identifier.
+
+		:param uniprotid: UniProt accession identifier
+		:type uniprotid: str
+		"""
 		self.uniprotid, self.reviewed = uniprotid, None
 		self.sequence = None
 		self.domains = dict()
@@ -128,6 +169,22 @@ class Uniprot:
 		self.server = "https://www.ebi.ac.uk/proteins/api/"
 
 	def extract_uniprot(self):
+		"""
+		Extract protein information from UniProt API.
+
+		Retrieves protein sequence, domains, and post-translational modifications
+		from the UniProt database using the API. Processes features including
+		domains, binding sites, and various PTMs (phosphorylation, methylation,
+		ubiquitination, acetylation).
+
+		:return: Status message indicating completion of API request
+		:rtype: str
+
+		.. note::
+			This method populates the object's attributes with data from UniProt.
+			If no data is found for certain categories, the corresponding attributes
+			are set to None.
+		"""
 
 		uniprot_api = "proteins?offset=0&size=-1&accession=%s" % self.uniprotid
 		api_request = requests.get(self.server + uniprot_api,
@@ -185,6 +242,20 @@ class Uniprot:
 		return "UniProt API request is done."
 
 	def find_domain(self, protein_edit_location, old_aa):
+		"""
+		Find protein domain at a specific amino acid position.
+
+		Checks if the given protein position falls within any known protein domains
+		and validates that the amino acid at that position matches the expected residue.
+
+		:param protein_edit_location: Position in the protein sequence (1-indexed)
+		:type protein_edit_location: int
+		:param old_aa: Expected amino acid at the given position
+		:type old_aa: str
+
+		:return: Domain name if position is within a domain and amino acid matches, None otherwise
+		:rtype: str or None
+		"""
 
 		edit_domain = None
 		if self.domains != {} and self.domains is not None:
@@ -195,6 +266,22 @@ class Uniprot:
 		return edit_domain
 
 	def find_ptm_site(self, ptm_type, protein_edit_location, old_aa):
+		"""
+		Find post-translational modification site at a specific position.
+
+		Checks if the given protein position corresponds to a known PTM site
+		of the specified type and validates the amino acid at that position.
+
+		:param ptm_type: Type of PTM to search for ('phosphorylation', 'methylation', 'ubiquitination', 'acetylation')
+		:type ptm_type: str
+		:param protein_edit_location: Position in the protein sequence (1-indexed)
+		:type protein_edit_location: int
+		:param old_aa: Expected amino acid at the given position
+		:type old_aa: str
+
+		:return: PTM description if found at the position, None otherwise
+		:rtype: str or None
+		"""
 
 		edit_ptm_site = None
 		if ptm_type == "phosphorylation": d = self.phosphorylation_sites
@@ -210,6 +297,19 @@ class Uniprot:
 		return edit_ptm_site
 
 	def extract_mutagenesis(self):
+		"""
+		Extract mutagenesis data from UniProt API.
+
+		Retrieves experimental mutagenesis data for the protein, including
+		amino acid substitutions and their phenotypic effects.
+
+		:return: Status message indicating completion of mutagenesis data extraction
+		:rtype: str
+
+		.. note::
+			This method populates the mutagenesis attribute with experimental
+			data from UniProt's mutagenesis features.
+		"""
 
 		mut_api = "features/%s?types=MUTAGEN" % self.uniprotid
 		mut_api_request = requests.get(self.server + mut_api,
@@ -235,6 +335,20 @@ class Uniprot:
 											mut["description"])
 
 	def find_mutagenesis(self, protein_edit_location, new_aa):
+		"""
+		Find mutagenesis data for a specific amino acid substitution.
+
+		Searches for experimental mutagenesis data at the given position with
+		the specified amino acid substitution.
+
+		:param protein_edit_location: Position in the protein sequence (1-indexed)
+		:type protein_edit_location: int
+		:param new_aa: New amino acid after substitution
+		:type new_aa: str
+
+		:return: Mutagenesis description(s) if found, None otherwise
+		:rtype: str or None
+		"""
 
 		if str(protein_edit_location) in self.mutagenesis.keys():
 			mut = self.mutagenesis[str(protein_edit_location)]
@@ -247,8 +361,40 @@ class Uniprot:
 
 
 class Ensembl:
+	"""
+	A class for interacting with the Ensembl REST API to retrieve genomic information.
+
+	This class handles gene and transcript data retrieval from Ensembl including
+	genomic sequences, transcript information, exon boundaries, and coding sequences.
+	It provides methods to extract and analyze genomic features for base editor analysis.
+
+	:param hugo_symbol: HGNC gene symbol (e.g., 'TP53')
+	:type hugo_symbol: str
+	:param assembly: Genome assembly version ('GRCh38' or 'hg19')
+	:type assembly: str
+
+	:ivar hugo_symbol: HGNC gene symbol
+	:ivar assembly: Genome assembly version
+	:ivar server: Base URL for Ensembl REST API
+	:ivar gene_id: Ensembl gene identifier
+	:ivar info_dict: Dictionary containing transcript and exon information
+	:ivar sequence: Gene genomic sequence
+	:ivar flan_sequence: Gene sequence with flanking regions
+	:ivar chromosome: Chromosome where the gene is located
+	:ivar strand: Gene strand orientation (1 or -1)
+	:ivar gene_range: List containing gene start and end positions
+	:ivar flan_gene_range: List containing gene positions with flanking regions
+	"""
 
 	def __init__(self, hugo_symbol, assembly):
+		"""
+		Initialize Ensembl object with gene symbol and assembly.
+
+		:param hugo_symbol: HGNC gene symbol
+		:type hugo_symbol: str
+		:param assembly: Genome assembly version
+		:type assembly: str
+		"""
 		self.hugo_symbol = hugo_symbol
 		self.assembly = assembly
 		self.server = "http://grch37.rest.ensembl.org" \
@@ -263,6 +409,19 @@ class Ensembl:
 		self.p_sequence = None
 
 	def extract_gene_id(self):
+		"""
+		Extract Ensembl gene identifier from gene symbol.
+
+		Retrieves the Ensembl gene ID corresponding to the HGNC gene symbol
+		using the Ensembl REST API. Validates that the gene is on a standard
+		chromosome (1-22, X, Y).
+
+		:return: 1 if gene ID found successfully, 0 if not found
+		:rtype: int
+
+		.. note::
+			This method prints status messages to stdout and sets the gene_id attribute.
+		"""
 
 		hugo_ensembl = "/xrefs/symbol/homo_sapiens/%s?" % self.hugo_symbol
 
@@ -302,6 +461,22 @@ class Ensembl:
 			return 0
 
 	def extract_sequence(self, gene_id, mutations):
+		"""
+		Extract genomic sequence for the gene from Ensembl.
+
+		Retrieves the gene sequence and processes it for analysis, including
+		handling strand orientation and incorporating user-provided mutations.
+
+		:param gene_id: Ensembl gene identifier
+		:type gene_id: str
+		:param mutations: List of genomic mutations to incorporate into the sequence
+		:type mutations: list or None
+
+		.. note::
+			This method sets multiple sequence-related attributes and handles
+			reverse complement for negative strand genes. Mutations are applied
+			if provided and validated against the reference sequence.
+		"""
 
 		seq_ensembl = self.server + "/sequence/id/%s?" % gene_id
 		seq_flan_ensembl = self.server + "/sequence/id/%s?expand_3prime=23;expand_5prime=23" % gene_id
@@ -800,7 +975,49 @@ class Ensembl:
 
 
 class Variant:
+	"""
+	A class for handling variant information and VEP (Variant Effect Predictor) analysis.
+
+	This class processes genomic variants and their consequences using Ensembl's VEP API.
+	It handles HGVS nomenclature, consequence prediction, and clinical significance assessment.
+
+	:param hgvs: HGVS nomenclature string for the variant
+	:type hgvs: str
+	:param gene: Gene symbol where the variant is located
+	:type gene: str
+	:param strand: Strand orientation (1 or -1)
+	:type strand: int
+	:param transcript: Ensembl transcript identifier
+	:type transcript: str
+
+	:ivar hgvs: Original HGVS string
+	:ivar hgvsc: HGVS coding sequence nomenclature
+	:ivar hgvsp: HGVS protein nomenclature
+	:ivar vep: VEP response data
+	:ivar gene: Gene symbol
+	:ivar strand: Strand orientation
+	:ivar transcript: Transcript identifier
+	:ivar variant_class: Type of variant (SNV, insertion, etc.)
+	:ivar consequence_terms: List of consequence terms
+	:ivar most_severe_consequence: Most severe predicted consequence
+	:ivar protein_change: Protein-level change description
+	:ivar old_aa: Original amino acid
+	:ivar new_aa: Changed amino acid
+	:ivar clinical: Clinical significance information
+	"""
 	def __init__(self, hgvs, gene, strand, transcript):
+		"""
+		Initialize Variant object with genomic variant information.
+
+		:param hgvs: HGVS nomenclature string
+		:type hgvs: str
+		:param gene: Gene symbol
+		:type gene: str
+		:param strand: Strand orientation
+		:type strand: int
+		:param transcript: Transcript identifier
+		:type transcript: str
+		"""
 		self.hgvs, self.hgvsc, self.hgvsp = hgvs, None, None
 		self.vep = None
 		self.gene, self.strand = gene, strand
@@ -1089,15 +1306,32 @@ class Variant:
 def find_pam_protospacer(sequence, pam_sequence, searched_nucleotide,
 						 activity_window, pam_window, protospacer_length):
 	"""
-	Finding all possible PAM and protospacer regions on the sequence of the gene.
-	:param sequence: The sequence of the interested gene.
-	:param pam_sequence: The sequence pattern of the PAM region (NGG/NG etc)
-	:param searched_nucleotide: The interested nucleotide which will be changed with BE
-	:param activity_window: The location of the activity window on the protospacer sequence.
-	:param pam_window: The location of the PAM sequence when 1st index of the protospacer is 1.
-	:param protospacer_length: The length of protospacer.
-	:return crisprs: A list of dictionary having sequences and locations of the gRNA targeted
-	gene parts. The indices are indicated when the first index of the gene is 1.
+	Find all possible PAM and protospacer regions on the gene sequence.
+
+	Searches for PAM (Protospacer Adjacent Motif) sequences and their corresponding
+	protospacers within the given gene sequence. Identifies potential base editing
+	sites within the activity window.
+
+	:param sequence: The DNA sequence of the gene of interest
+	:type sequence: str
+	:param pam_sequence: PAM sequence pattern (e.g., 'NGG', 'NG')
+	:type pam_sequence: str
+	:param searched_nucleotide: Target nucleotide to be edited by base editor
+	:type searched_nucleotide: str
+	:param activity_window: Tuple defining the activity window positions on protospacer (1-indexed)
+	:type activity_window: tuple
+	:param pam_window: Tuple defining PAM position relative to protospacer start (1-indexed)
+	:type pam_window: tuple
+	:param protospacer_length: Length of the protospacer sequence
+	:type protospacer_length: int
+
+	:return: List of dictionaries containing gRNA sequences, locations, and editing information
+	:rtype: list
+
+	.. note::
+		The function uses regular expressions to find PAM patterns and considers
+		both forward and reverse orientations. Positions are converted to 0-indexed
+		for internal processing but returned as 1-indexed for biological relevance.
 	"""
 	# Since python index starts from 0, decrease the start position index given from the user
 	activity_window = [activity_window[0] - 1, activity_window[1]]
