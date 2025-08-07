@@ -1915,825 +1915,479 @@ def collect_mutation_location(mutations):
 
 
 def check_genome_for_mutation(genomic_range, direction, mutations, window_type, window):
-    yes_mutation = False
-
-    if direction == "left":
-        end = int(genomic_range.split("-")[0])
-        start = int(genomic_range.split("-")[1])
-
-    elif direction == "right":
-        end = int(genomic_range.split("-")[1])
-        start = int(genomic_range.split("-")[0])
-
-    if window_type == "gRNA":
-        if mutations:
-            for loc in mutations:
-                if (
-                    int(genomic_range.split("-")[0])
-                    <= loc
-                    <= int(genomic_range.split("-")[1])
-                ):
-                    yes_mutation = True
-
-    elif window_type == "activity":
-        if direction == "right":
-            act_start = start + window[0]
-            act_end = start + window[1]
-            activity_sites = list(range(act_start, act_end))
-        elif direction == "left":
-            act_start = start - window[0]
-            act_end = start - window[1]
-            activity_sites = list(range(act_end, act_start))
-        if mutations:
-            for loc in mutations:
-                if loc in activity_sites:
-                    yes_mutation = True
-
-    elif window_type == "PAM":
-        if direction == "right":
-            pam_start = start + window[0]
-            pam_end = start + window[1]
-            pam_sites = list(range(pam_start, pam_end))
-        elif direction == "left":
-            pam_start = start - window[0]
-            pam_end = start - window[1]
-            pam_sites = list(range(pam_end, pam_start))
-        if mutations:
-            for loc in mutations:
-                if loc in pam_sites:
-                    yes_mutation = True
-
-    return yes_mutation
-
-
-def find_editable_nucleotide(
-    crispr_df,
-    searched_nucleotide,
-    activity_window,
-    pam_window,
-    ensembl_object,
-    mutations,
-):
-    """
-    Finding editable nucleotides and their genomic coordinates
-    :param crispr_df: A data frame having sequence, location and direction information of
-    the CRISPRs from extract_crisprs().
-    :param searched_nucleotide: The interested nucleotide which will be changed with BE
-    :param activity_window: The location of the activity window on the protospacer sequence.
-    :param pam_window: The location of the PAM sequence when 1st index of the protospacer is 1.
-    :param ensembl_object: The Ensembl Object created with Ensembl().
-    :param mutations: Given mutation list from the user
-    :return edit_df: A data frame having sequence, edit_location, location and direction
-    information of the CRISPRs.
-    """
-
-    actual_seq_range = ensembl_object.gene_range
-    if actual_seq_range[0] > actual_seq_range[1]:
-        actual_seq_range = [actual_seq_range[1], actual_seq_range[0]]
-
-    actual_locations = list(range(actual_seq_range[0], actual_seq_range[1]))
-
-    activity_window = [activity_window[0] - 1, activity_window[1]]
-    pam_window = [pam_window[0] - 1, pam_window[1]]
-
-    print("Edit Data Frame is filling...")
-    edit_df = pandas.DataFrame(
-        columns=[
-            "Hugo_Symbol",
-            "CRISPR_PAM_Sequence",
-            "gRNA_Target_Sequence",
-            "Location",
-            "Edit_Location",
-            "Direction",
-            "Strand",
-            "Gene_ID",
-            "Transcript_ID",
-            "Exon_ID",
-            "guide_in_CDS",
-            "gRNA_flanking_sequences",
-            "Edit_in_Exon",
-            "Edit_in_CDS",
-            "GC%",
-            "# Edits/guide",
-            "Poly_T",
-            "mutation_on_guide",
-            "guide_change_mutation",
-            "mutation_on_window",
-            "mutation_on_PAM",
-        ]
-    )
-
-    for ind, row in crispr_df.iterrows():
-        # Check only with the sequence having PAM since it only has the searched nucleotide!
-        try:
-            searched_ind = [
-                nuc_ind
-                for nuc_ind in range(0, len(row["gRNA_Target_Sequence"]))
-                if nuc_ind in list(range(activity_window[0], activity_window[1]))
-                and row["gRNA_Target_Sequence"][nuc_ind] == searched_nucleotide
-            ]
-        except TypeError:
-            print("TypeError on ", row)
-        if searched_ind is not []:
-            # If there is an editable nucleotide in the activity sites
-            actual_inds = []
-            if row["Direction"] == "left":
-                for nuc_ind in searched_ind:
-                    if (
-                        int(row["Location"].split(":")[1].split("-")[1]) - nuc_ind
-                        in actual_locations
-                    ):
-                        actual_inds.append(
-                            int(row["Location"].split(":")[1].split("-")[1]) - nuc_ind
-                        )
-
-            elif row["Direction"] == "right":
-                for nuc_ind in searched_ind:
-                    if (
-                        int(row["Location"].split(":")[1].split("-")[0]) + nuc_ind
-                        in actual_locations
-                    ):
-                        actual_inds.append(
-                            int(row["Location"].split(":")[1].split("-")[0]) + nuc_ind
-                        )
-
-            for actual_ind in actual_inds:
-
-                transcript_exon = ensembl_object.check_range_info(
-                    actual_ind, actual_ind + 1
-                )
-
-                if transcript_exon is not None:
-                    for transcript, exon_list in transcript_exon.items():
-                        if row["Exon_ID"] is not None and row["Exon_ID"] in exon_list:
-                            edit_in_exon = True
-                        else:
-                            edit_in_exon = False
-                else:
-                    edit_in_exon = False
-
-                edit_in_cds = ensembl_object.check_cds(
-                    row["Transcript_ID"], actual_ind, actual_ind + 1
-                )
-
-                df = pandas.DataFrame(
-                    [
-                        [
-                            row["Hugo_Symbol"],
-                            row["CRISPR_PAM_Sequence"],
-                            row["gRNA_Target_Sequence"],
-                            row["Location"],
-                            actual_ind,
-                            row["Direction"],
-                            ensembl_object.strand,
-                            ensembl_object.gene_id,
-                            row["Transcript_ID"],
-                            row["Exon_ID"],
-                            row["guide_in_CDS"],
-                            row["gRNA_flanking_sequences"],
-                            edit_in_exon,
-                            edit_in_cds,
-                        ]
-                    ],
-                    columns=[
-                        "Hugo_Symbol",
-                        "CRISPR_PAM_Sequence",
-                        "gRNA_Target_Sequence",
-                        "Location",
-                        "Edit_Location",
-                        "Direction",
-                        "Strand",
-                        "Gene_ID",
-                        "Transcript_ID",
-                        "Exon_ID",
-                        "guide_in_CDS",
-                        "gRNA_flanking_sequences",
-                        "Edit_in_Exon",
-                        "Edit_in_CDS",
-                    ],
-                )
-                edit_df = pandas.concat([edit_df, df])
-
-        else:
-            # If not --> no edit
-            df = pandas.DataFrame(
-                [
-                    [
-                        row["Hugo_Symbol"],
-                        row["CRISPR_PAM_Sequence"],
-                        row["gRNA_Target_Sequence"],
-                        row["Location"],
-                        "No edit",
-                        row["Direction"],
-                        ensembl_object.strand,
-                        ensembl_object.gene_id,
-                        row["Transcript_ID"],
-                        row["Exon_ID"],
-                        row["guide_in_CDS"],
-                        row["gRNA_flanking_sequences"],
-                        False,
-                        False,
-                    ]
-                ],
-                columns=[
-                    "Hugo_Symbol",
-                    "CRISPR_PAM_Sequence",
-                    "gRNA_Target_Sequence",
-                    "Location",
-                    "Edit_Location",
-                    "Direction",
-                    "Strand",
-                    "Gene_ID",
-                    "Transcript_ID",
-                    "Exon_ID",
-                    "guide_in_CDS",
-                    "gRNA_flanking_sequences",
-                    "Edit_in_Exon",
-                    "Edit_in_CDS",
-                ],
-            )
-            edit_df = pandas.concat([edit_df, df])
-
-    edit_df["# Edits/guide"] = 0
-    for guide, g_df in edit_df.groupby("gRNA_Target_Sequence"):
-        unique_edits_per_guide = len(set(list(g_df["Edit_Location"])))
-        edit_df.loc[edit_df.gRNA_Target_Sequence == guide, "# Edits/guide"] = (
-            unique_edits_per_guide
-        )
-
-    edit_df["Poly_T"] = edit_df.apply(
-        lambda x: (
-            True if re.search("T{4,}", x.gRNA_Target_Sequence) is not None else False
-        ),
-        axis=1,
-    )
-
-    edit_df["GC%"] = edit_df.apply(
-        lambda x: (
-            x.gRNA_Target_Sequence.count("C") + x.gRNA_Target_Sequence.count("G")
-        )
-        * 100.0
-        / len(x.gRNA_Target_Sequence),
-        axis=1,
-    )
-
-    mutation_locations = collect_mutation_location(mutations=mutations)
-
-    edit_df["mutation_on_guide"] = edit_df.apply(
-        lambda x: check_genome_for_mutation(
-            genomic_range=x.Location.split(":")[1],
-            direction=x.Direction,
-            mutations=mutation_locations,
-            window_type="gRNA",
-            window=None,
-        ),
-        axis=1,
-    )
-    edit_df["guide_change_mutation"] = edit_df.apply(
-        lambda x: (
-            True
-            if mutation_locations is not None
-            and int(x.Edit_Location) in mutation_locations
-            else False
-        ),
-        axis=1,
-    )
-
-    edit_df["mutation_on_window"] = edit_df.apply(
-        lambda x: check_genome_for_mutation(
-            genomic_range=x.Location.split(":")[1],
-            direction=x.Direction,
-            mutations=mutation_locations,
-            window_type="activity",
-            window=activity_window,
-        ),
-        axis=1,
-    )
-
-    edit_df["mutation_on_PAM"] = edit_df.apply(
-        lambda x: check_genome_for_mutation(
-            genomic_range=x.Location.split(":")[1],
-            direction=x.Direction,
-            mutations=mutation_locations,
-            window_type="PAM",
-            window=pam_window,
-        ),
-        axis=1,
-    )
-
-    return edit_df
-
-
-def extract_hgvs_df(
-    edit_df,
-    ensembl_object,
-    transcript_id,
-    edited_nucleotide,
-    new_nucleotide,
-    activity_window,
-    mutations,
-):
-    """
-    Collect Ensembl VEP information for given edits
-    :param edit_df: Edit data frame created with find_editable_nucleotide()
-    :param ensembl_object: The Ensembl Object created with Ensembl().
-    :param transcript_id: Ensembl Transcript id for the filtration
-    :param edited_nucleotide: The interested nucleotide which will be changed with BE.
-    :param new_nucleotide: The new nucleotide which will be changed to with BE.
-    :param activity_window: The location of the activity window on the protospacer sequence.
-    :param mutations: Given mutation list from the user
-    :return hgvs_df: The HGVS notations of all possible variants
-    """
-    # For (-) direction crisprs, base reversion should be done.
-    nucleotide_dict = {"A": "T", "T": "A", "G": "C", "C": "G"}
-
-    # Collect chromosome
-    chromosome, strand = ensembl_object.chromosome, ensembl_object.strand
-    activity_window = [activity_window[0] - 1, activity_window[1]]
-
-    # Collect mutations
-    mutation_locations = collect_mutation_location(mutations)
-
-    # Transcript filtration
-    loc_edit_df = None
-    if transcript_id is not None:
-        loc_edit_df = edit_df[edit_df.Transcript_ID == transcript_id]
-    else:
-        for transcript, transcript_dict in ensembl_object.info_dict.items():
-            loc_edit_df = edit_df[edit_df.Transcript_ID == transcript]
-
-    # Each gRNA at a time
-    row_dicts = list()
-    for direction, direction_df in loc_edit_df.groupby("Direction"):
-        if direction == "left" or "left" in list(direction):
-            # Base reversion of the (-) direction crisprs
-            rev_edited_nucleotide, rev_new_nucleotide = (
-                nucleotide_dict[edited_nucleotide],
-                nucleotide_dict[new_nucleotide],
-            )
-
-            for grna, grna_df in direction_df.groupby("gRNA_Target_Sequence"):
-
-                total_edit = len(set(list(grna_df["Edit_Location"].values)))
-
-                # For individual edits
-                for edit_loc, grna_edit_df in grna_df.groupby("Edit_Location"):
-
-                    if True not in grna_edit_df.mutation_on_window.unique():
-
-                        hgvs = "%s:g.%s%s>%s" % (
-                            str(chromosome),
-                            str(edit_loc),
-                            rev_edited_nucleotide,
-                            rev_new_nucleotide,
-                        )
-
-                    elif (
-                        len(list(grna_edit_df.mutation_on_window.unique())) == 1
-                        and list(grna_edit_df.mutation_on_window.unique())[0] is None
-                    ):
-
-                        hgvs = "%s:g.%s%s>%s" % (
-                            str(chromosome),
-                            str(edit_loc),
-                            rev_edited_nucleotide,
-                            rev_new_nucleotide,
-                        )
-
-                    else:
-                        start = (
-                            int(
-                                list(grna_df["Location"].values)[0]
-                                .split(":")[1]
-                                .split("-")[1]
-                            )
-                            - activity_window[1]
-                            + 1
-                        )
-                        end = (
-                            int(
-                                list(grna_df["Location"].values)[0]
-                                .split(":")[1]
-                                .split("-")[1]
-                            )
-                            - activity_window[0]
-                        )
-
-                        mutations_on_window, mutation_edited = list(), False
-                        for mutation in mutation_locations:
-                            if start <= mutation <= end:
-                                mutations_on_window.append(mutation)
-                            if mutation == edit_loc:
-                                mutation_edited = True
-
-                        if mutation_edited:
-                            for mut in mutations:
-                                alteration = mut.split(".")[1]
-                                if int(
-                                    re.match(
-                                        "([0-9]+)([a-z]+)",
-                                        alteration.split(">")[0],
-                                        re.I,
-                                    ).groups()[0]
-                                ) == int(edit_loc):
-                                    ref_nuc = re.match(
-                                        "([0-9]+)([a-z]+)",
-                                        alteration.split(">")[1],
-                                        re.I,
-                                    ).groups()[0]
-                                    hgvs = "%s:g.%s%s>%s" % (
-                                        str(chromosome),
-                                        str(edit_loc),
-                                        ref_nuc,
-                                        rev_new_nucleotide,
-                                    )
-                        else:
-                            hgvs = "%s:g.%s%s>%s" % (
-                                str(chromosome),
-                                str(edit_loc),
-                                rev_edited_nucleotide,
-                                rev_new_nucleotide,
-                            )
-
-                    d = {
-                        "Hugo_Symbol": list(grna_edit_df["Hugo_Symbol"].values)[0],
-                        "Edit_Type": "individual",
-                        "CRISPR_PAM_Sequence": grna_edit_df[
-                            "CRISPR_PAM_Sequence"
-                        ].values[0],
-                        "CRISPR_PAM_Location": grna_edit_df["Location"].values[0],
-                        "gRNA_Target_Sequence": grna,
-                        "gRNA_Target_Location": grna_edit_df["Location"]
-                        .values[0]
-                        .split(":")[0]
-                        + ":"
-                        + str(
-                            int(
-                                grna_edit_df["Location"]
-                                .values[0]
-                                .split(":")[1]
-                                .split("-")[0]
-                            )
-                            - 3
-                        )
-                        + "-"
-                        + grna_edit_df["Location"]
-                        .values[0]
-                        .split(":")[1]
-                        .split("-")[1],
-                        "Total_Edit": total_edit,
-                        "Edit_Location": edit_loc,
-                        "Direction": direction,
-                        "Transcript_ID": grna_edit_df["Transcript_ID"].values[0],
-                        "Exon_ID": grna_edit_df["Exon_ID"].values[0],
-                        "guide_in_CDS": grna_edit_df["guide_in_CDS"].values[0],
-                        "gRNA_flanking_sequences": grna_edit_df[
-                            "gRNA_flanking_sequences"
-                        ].values[0],
-                        "Edit_in_Exon": grna_edit_df["Edit_in_Exon"].values[0],
-                        "Edit_in_CDS": grna_edit_df["Edit_in_CDS"].values[0],
-                        "mutation_on_guide": grna_edit_df["mutation_on_guide"].values[
-                            0
-                        ],
-                        "guide_change_mutation": grna_edit_df[
-                            "guide_change_mutation"
-                        ].values[0],
-                        "mutation_on_window": grna_edit_df["mutation_on_window"].values[
-                            0
-                        ],
-                        "mutation_on_PAM": grna_edit_df["mutation_on_PAM"].values[0],
-                        "# Edits/guide": grna_edit_df["# Edits/guide"].values[0],
-                        "Poly_T": grna_edit_df["Poly_T"].values[0],
-                        "GC%": grna_edit_df["GC%"].values[0],
-                        "HGVS": hgvs,
-                    }
-                    row_dicts.append(d)
-
-                if total_edit > 1:
-                    # For multiple edits
-                    start = (
-                        int(
-                            list(grna_df["Location"].values)[0]
-                            .split(":")[1]
-                            .split("-")[1]
-                        )
-                        - activity_window[1]
-                        + 1
-                    )
-                    end = (
-                        int(
-                            list(grna_df["Location"].values)[0]
-                            .split(":")[1]
-                            .split("-")[1]
-                        )
-                        - activity_window[0]
-                    )
-                    position = str(start) + "_" + str(end)
-
-                    activity_sites = grna[activity_window[0] : activity_window[1]]
-                    activity_sites = "".join(
-                        [nucleotide_dict[n] for n in activity_sites[::-1]]
-                    )
-                    edited_activity_sites = activity_sites.replace(
-                        rev_edited_nucleotide, rev_new_nucleotide
-                    )
-                    hgvs = "%s:g.%sdelins%s" % (
-                        str(chromosome),
-                        position,
-                        edited_activity_sites,
-                    )
-
-                    d = {
-                        "Hugo_Symbol": list(grna_edit_df["Hugo_Symbol"].values)[0],
-                        "Edit_Type": "multiple",
-                        "CRISPR_PAM_Sequence": grna_edit_df[
-                            "CRISPR_PAM_Sequence"
-                        ].values[0],
-                        "CRISPR_PAM_Location": grna_edit_df["Location"].values[0],
-                        "gRNA_Target_Sequence": grna,
-                        "gRNA_Target_Location": grna_edit_df["Location"]
-                        .values[0]
-                        .split(":")[0]
-                        + ":"
-                        + str(
-                            int(
-                                grna_edit_df["Location"]
-                                .values[0]
-                                .split(":")[1]
-                                .split("-")[0]
-                            )
-                            - 3
-                        )
-                        + "-"
-                        + grna_edit_df["Location"]
-                        .values[0]
-                        .split(":")[1]
-                        .split("-")[1],
-                        "Total_Edit": total_edit,
-                        "Edit_Location": position.split("_")[0]
-                        + "-"
-                        + position.split("_")[1],
-                        "Direction": direction,
-                        "Transcript_ID": grna_edit_df["Transcript_ID"].values[0],
-                        "Exon_ID": grna_edit_df["Exon_ID"].values[0],
-                        "guide_in_CDS": grna_edit_df["guide_in_CDS"].values[0],
-                        "gRNA_flanking_sequences": grna_edit_df[
-                            "gRNA_flanking_sequences"
-                        ].values[0],
-                        "Edit_in_Exon": grna_edit_df["Edit_in_Exon"].values[0],
-                        "Edit_in_CDS": grna_edit_df["Edit_in_CDS"].values[0],
-                        "mutation_on_guide": grna_edit_df["mutation_on_guide"].values[
-                            0
-                        ],
-                        "guide_change_mutation": grna_edit_df[
-                            "guide_change_mutation"
-                        ].values[0],
-                        "mutation_on_window": grna_edit_df["mutation_on_window"].values[
-                            0
-                        ],
-                        "mutation_on_PAM": grna_edit_df["mutation_on_PAM"].values[0],
-                        "# Edits/guide": grna_edit_df["# Edits/guide"].values[0],
-                        "Poly_T": grna_edit_df["Poly_T"].values[0],
-                        "GC%": grna_edit_df["GC%"].values[0],
-                        "HGVS": hgvs,
-                    }
-                    row_dicts.append(d)
-
-        elif direction == "right" or "right" in list(direction):
-
-            for grna, grna_df in direction_df.groupby("gRNA_Target_Sequence"):
-
-                total_edit = len(set(list(grna_df["Edit_Location"].values)))
-
-                # For individual edits
-
-                for edit_loc, grna_edit_df in grna_df.groupby("Edit_Location"):
-
-                    if True not in grna_edit_df.mutation_on_window.unique():
-
-                        hgvs = "%s:g.%s%s>%s" % (
-                            str(chromosome),
-                            str(edit_loc),
-                            edited_nucleotide,
-                            new_nucleotide,
-                        )
-
-                    elif (
-                        len(list(grna_edit_df.mutation_on_window.unique())) == 1
-                        and list(grna_edit_df.mutation_on_window.unique())[0] is False
-                    ):
-
-                        hgvs = "%s:g.%s%s>%s" % (
-                            str(chromosome),
-                            str(edit_loc),
-                            edited_nucleotide,
-                            new_nucleotide,
-                        )
-
-                    else:
-                        end = (
-                            int(
-                                list(grna_df["Location"].values)[0]
-                                .split(":")[1]
-                                .split("-")[0]
-                            )
-                            + activity_window[1]
-                            - 1
-                        )
-                        start = (
-                            int(
-                                list(grna_df["Location"].values)[0]
-                                .split(":")[1]
-                                .split("-")[0]
-                            )
-                            + activity_window[0]
-                        )
-
-                        mutations_on_window, mutation_edited = list(), False
-                        for mutation in mutation_locations:
-                            if start <= mutation <= end:
-                                mutations_on_window.append(mutation)
-                            if mutation == edit_loc:
-                                mutation_edited = True
-
-                        if mutation_edited:
-                            for mut in mutations:
-                                alteration = mut.split(".")[1]
-                                if int(
-                                    re.match(
-                                        "([0-9]+)([a-z]+)",
-                                        alteration.split(">")[0],
-                                        re.I,
-                                    ).groups()[0]
-                                ) == int(edit_loc):
-                                    ref_nuc = re.match(
-                                        "([0-9]+)([a-z]+)",
-                                        alteration.split(">")[1],
-                                        re.I,
-                                    ).groups()[0]
-                                    hgvs = "%s:g.%s%s>%s" % (
-                                        str(chromosome),
-                                        str(edit_loc),
-                                        ref_nuc,
-                                        new_nucleotide,
-                                    )
-                        else:
-                            hgvs = "%s:g.%s%s>%s" % (
-                                str(chromosome),
-                                str(edit_loc),
-                                edited_nucleotide,
-                                new_nucleotide,
-                            )
-
-                    d = {
-                        "Hugo_Symbol": list(grna_edit_df["Hugo_Symbol"].values)[0],
-                        "Edit_Type": "individual",
-                        "CRISPR_PAM_Sequence": grna_edit_df[
-                            "CRISPR_PAM_Sequence"
-                        ].values[0],
-                        "CRISPR_PAM_Location": grna_edit_df["Location"].values[0],
-                        "gRNA_Target_Sequence": grna,
-                        "gRNA_Target_Location": grna_edit_df["Location"]
-                        .values[0]
-                        .split(":")[0]
-                        + ":"
-                        + grna_edit_df["Location"].values[0].split(":")[1].split("-")[0]
-                        + "-"
-                        + str(
-                            int(
-                                grna_edit_df["Location"]
-                                .values[0]
-                                .split(":")[1]
-                                .split("-")[1]
-                            )
-                            - 3
-                        ),
-                        "Total_Edit": total_edit,
-                        "Edit_Location": edit_loc,
-                        "Direction": direction,
-                        "Transcript_ID": grna_edit_df["Transcript_ID"].values[0],
-                        "Exon_ID": grna_edit_df["Exon_ID"].values[0],
-                        "guide_in_CDS": grna_edit_df["guide_in_CDS"].values[0],
-                        "gRNA_flanking_sequences": grna_edit_df[
-                            "gRNA_flanking_sequences"
-                        ].values[0],
-                        "Edit_in_Exon": grna_edit_df["Edit_in_Exon"].values[0],
-                        "Edit_in_CDS": grna_edit_df["Edit_in_CDS"].values[0],
-                        "mutation_on_guide": grna_edit_df["mutation_on_guide"].values[
-                            0
-                        ],
-                        "guide_change_mutation": grna_edit_df[
-                            "guide_change_mutation"
-                        ].values[0],
-                        "mutation_on_window": grna_edit_df["mutation_on_window"].values[
-                            0
-                        ],
-                        "mutation_on_PAM": grna_edit_df["mutation_on_PAM"].values[0],
-                        "# Edits/guide": grna_edit_df["# Edits/guide"].values[0],
-                        "Poly_T": grna_edit_df["Poly_T"].values[0],
-                        "GC%": grna_edit_df["GC%"].values[0],
-                        "HGVS": hgvs,
-                    }
-
-                    row_dicts.append(d)
-
-                if total_edit > 1:
-                    # For multiple edits
-                    end = (
-                        int(
-                            list(grna_df["Location"].values)[0]
-                            .split(":")[1]
-                            .split("-")[0]
-                        )
-                        + activity_window[1]
-                        - 1
-                    )
-                    start = (
-                        int(
-                            list(grna_df["Location"].values)[0]
-                            .split(":")[1]
-                            .split("-")[0]
-                        )
-                        + activity_window[0]
-                    )
-                    position = str(start) + "_" + str(end)
-
-                    activity_sites = grna[activity_window[0] : activity_window[1]]
-                    edited_activity_sites = activity_sites.replace(
-                        edited_nucleotide, new_nucleotide
-                    )
-                    hgvs = "%s:g.%sdelins%s" % (
-                        str(chromosome),
-                        position,
-                        edited_activity_sites,
-                    )
-
-                    d = {
-                        "Hugo_Symbol": grna_edit_df["Hugo_Symbol"].values[0],
-                        "Edit_Type": "multiple",
-                        "CRISPR_PAM_Sequence": grna_edit_df[
-                            "CRISPR_PAM_Sequence"
-                        ].values[0],
-                        "CRISPR_PAM_Location": grna_edit_df["Location"].values[0],
-                        "gRNA_Target_Sequence": grna,
-                        "gRNA_Target_Location": grna_edit_df["Location"]
-                        .values[0]
-                        .split(":")[0]
-                        + ":"
-                        + grna_edit_df["Location"].values[0].split(":")[1].split("-")[0]
-                        + "-"
-                        + str(
-                            int(
-                                grna_edit_df["Location"]
-                                .values[0]
-                                .split(":")[1]
-                                .split("-")[1]
-                            )
-                            - 3
-                        ),
-                        "Total_Edit": total_edit,
-                        "Edit_Location": position.split("_")[0]
-                        + "-"
-                        + position.split("_")[1],
-                        "Direction": direction,
-                        "Transcript_ID": grna_edit_df["Transcript_ID"].values[0],
-                        "Exon_ID": grna_edit_df["Exon_ID"].values[0],
-                        "guide_in_CDS": grna_edit_df["guide_in_CDS"].values[0],
-                        "gRNA_flanking_sequences": grna_edit_df[
-                            "gRNA_flanking_sequences"
-                        ].values[0],
-                        "Edit_in_Exon": grna_edit_df["Edit_in_Exon"].values[0],
-                        "Edit_in_CDS": grna_edit_df["Edit_in_CDS"].values[0],
-                        "mutation_on_guide": grna_edit_df["mutation_on_guide"].values[
-                            0
-                        ],
-                        "guide_change_mutation": grna_edit_df[
-                            "guide_change_mutation"
-                        ].values[0],
-                        "mutation_on_window": grna_edit_df["mutation_on_window"].values[
-                            0
-                        ],
-                        "mutation_on_PAM": grna_edit_df["mutation_on_PAM"].values[0],
-                        "# Edits/guide": grna_edit_df["# Edits/guide"].values[0],
-                        "Poly_T": grna_edit_df["Poly_T"].values[0],
-                        "GC%": grna_edit_df["GC%"].values[0],
-                        "HGVS": hgvs,
-                    }
-                    row_dicts.append(d)
-
-    hgvs_df = pandas.DataFrame(row_dicts)
-    return hgvs_df
+	yes_mutation = False
+
+	if direction == "left":
+		end = int(genomic_range.split("-")[0])
+		start = int(genomic_range.split("-")[1])
+
+	elif direction == "right":
+		end = int(genomic_range.split("-")[1])
+		start = int(genomic_range.split("-")[0])
+
+	if window_type == "gRNA":
+		if mutations:
+			for loc in mutations:
+				if int(genomic_range.split("-")[0]) <= loc <= int(genomic_range.split("-")[1]):
+					yes_mutation = True
+
+	elif window_type == "activity":
+		if direction == "right":
+			act_start = start + window[0]
+			act_end = start + window[1]
+			activity_sites = list(range(act_start, act_end))
+		elif direction == "left":
+			act_start = start - window[0]
+			act_end = start - window[1]
+			activity_sites = list(range(act_end, act_start))
+		if mutations:
+			for loc in mutations:
+				if loc in activity_sites:
+					yes_mutation = True
+
+	elif window_type == "PAM":
+		if direction == "right":
+			pam_start = start + window[0]
+			pam_end = start + window[1]
+			pam_sites = list(range(pam_start, pam_end))
+		elif direction == "left":
+			pam_start = start - window[0]
+			pam_end = start - window[1]
+			pam_sites = list(range(pam_end, pam_start))
+		if mutations:
+			for loc in mutations:
+				if loc in pam_sites:
+					yes_mutation = True
+
+	return yes_mutation
+
+
+def find_editable_nucleotide(crispr_df, searched_nucleotide, activity_window, pam_window,
+							 ensembl_object, mutations):
+	"""
+	Find editable nucleotides within gRNA activity windows and map to genomic coordinates.
+
+	Identifies specific nucleotides within the activity window of each gRNA that can
+	be targeted for base editing. Maps these positions to genomic coordinates and
+	incorporates mutation information if provided.
+
+	:param crispr_df: DataFrame containing gRNA sequence, location and direction information
+	:type crispr_df: pandas.DataFrame
+	:param searched_nucleotide: Target nucleotide to be edited by base editor
+	:type searched_nucleotide: str
+	:param activity_window: Activity window positions on protospacer (1-indexed)
+	:type activity_window: list
+	:param pam_window: PAM position relative to protospacer start (1-indexed)
+	:type pam_window: list
+	:param ensembl_object: Ensembl object containing gene sequence and annotation data
+	:type ensembl_object: Ensembl
+	:param mutations: List of user-provided genomic mutations to consider
+	:type mutations: list or None
+
+	:return: DataFrame with editable nucleotide positions and genomic coordinates
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function processes each gRNA from the input DataFrame and identifies
+		all editable positions within the activity window, handling both strand
+		orientations and mutation contexts.
+	"""
+
+	actual_seq_range = ensembl_object.gene_range
+	if actual_seq_range[0] > actual_seq_range[1]:
+		actual_seq_range = [actual_seq_range[1], actual_seq_range[0]]
+
+	actual_locations = list(range(actual_seq_range[0], actual_seq_range[1]))
+
+	activity_window = [activity_window[0] - 1, activity_window[1]]
+	pam_window = [pam_window[0] - 1, pam_window[1]]
+
+	print("Edit Data Frame is filling...")
+	edit_df = pandas.DataFrame(columns=["Hugo_Symbol", "CRISPR_PAM_Sequence", "gRNA_Target_Sequence", "Location",
+										"Edit_Location", "Direction", "Strand", "Gene_ID", "Transcript_ID", "Exon_ID",
+										"guide_in_CDS", "gRNA_flanking_sequences", "Edit_in_Exon", "Edit_in_CDS", "GC%",
+										"# Edits/guide", "Poly_T", "mutation_on_guide", "guide_change_mutation",
+										"mutation_on_window", "mutation_on_PAM"])
+
+	for ind, row in crispr_df.iterrows():
+		# Check only with the sequence having PAM since it only has the searched nucleotide!
+		try:
+			searched_ind = [nuc_ind for nuc_ind in range(0, len(row["gRNA_Target_Sequence"]))
+							if nuc_ind in list(range(activity_window[0], activity_window[1])) and
+							row["gRNA_Target_Sequence"][nuc_ind] == searched_nucleotide]
+		except TypeError:
+			print("TypeError on ", row)
+		if searched_ind is not []:
+			# If there is an editable nucleotide in the activity sites
+			actual_inds = []
+			if row["Direction"] == "left":
+				for nuc_ind in searched_ind:
+					if int(row["Location"].split(":")[1].split("-")[1]) - nuc_ind in actual_locations:
+						actual_inds.append(int(row["Location"].split(":")[1].split("-")[1]) - nuc_ind)
+
+			elif row["Direction"] == "right":
+				for nuc_ind in searched_ind:
+					if int(row["Location"].split(":")[1].split("-")[0]) + nuc_ind in actual_locations:
+						actual_inds.append(int(row["Location"].split(":")[1].split("-")[0]) + nuc_ind)
+
+			for actual_ind in actual_inds:
+
+				transcript_exon = ensembl_object.check_range_info(actual_ind, actual_ind + 1)
+
+				if transcript_exon is not None:
+					for transcript, exon_list in transcript_exon.items():
+						if row["Exon_ID"] is not None and row["Exon_ID"] in exon_list:
+							edit_in_exon = True
+						else:
+							edit_in_exon = False
+				else:
+					edit_in_exon = False
+
+				edit_in_cds = ensembl_object.check_cds(row["Transcript_ID"], actual_ind, actual_ind + 1)
+
+				df = pandas.DataFrame([[row["Hugo_Symbol"], row["CRISPR_PAM_Sequence"],
+										row["gRNA_Target_Sequence"], row["Location"], actual_ind,
+										row["Direction"], ensembl_object.strand, ensembl_object.gene_id,
+										row["Transcript_ID"], row["Exon_ID"], row["guide_in_CDS"],
+										row["gRNA_flanking_sequences"], edit_in_exon, edit_in_cds]],
+									  columns=["Hugo_Symbol", "CRISPR_PAM_Sequence", "gRNA_Target_Sequence",
+											   "Location", "Edit_Location", "Direction", "Strand",
+											   "Gene_ID", "Transcript_ID", "Exon_ID", "guide_in_CDS",
+											   "gRNA_flanking_sequences", "Edit_in_Exon", "Edit_in_CDS"])
+				edit_df = pandas.concat([edit_df, df])
+
+		else:
+			# If not --> no edit
+			df = pandas.DataFrame([[row["Hugo_Symbol"], row["CRISPR_PAM_Sequence"],
+									row["gRNA_Target_Sequence"], row["Location"], "No edit",
+									row["Direction"], ensembl_object.strand, ensembl_object.gene_id,
+									row["Transcript_ID"], row["Exon_ID"], row["guide_in_CDS"],
+									row["gRNA_flanking_sequences"], False, False]],
+								  columns=["Hugo_Symbol", "CRISPR_PAM_Sequence", "gRNA_Target_Sequence",
+										   "Location", "Edit_Location", "Direction", "Strand", "Gene_ID",
+										   "Transcript_ID", "Exon_ID", "guide_in_CDS", "gRNA_flanking_sequences",
+										   "Edit_in_Exon", "Edit_in_CDS"])
+			edit_df = pandas.concat([edit_df, df])
+
+	edit_df["# Edits/guide"] = 0
+	for guide, g_df in edit_df.groupby("gRNA_Target_Sequence"):
+		unique_edits_per_guide = len(set(list(g_df["Edit_Location"])))
+		edit_df.loc[edit_df.gRNA_Target_Sequence == guide, "# Edits/guide"] = unique_edits_per_guide
+
+	edit_df["Poly_T"] = edit_df.apply(
+		lambda x: True if re.search("T{4,}", x.gRNA_Target_Sequence) is not None else False, axis=1)
+
+	edit_df["GC%"] = edit_df.apply(
+		lambda x: (x.gRNA_Target_Sequence.count("C") + x.gRNA_Target_Sequence.count("G")) * 100.0 / len(
+			x.gRNA_Target_Sequence), axis=1)
+
+	mutation_locations = collect_mutation_location(mutations=mutations)
+
+	edit_df["mutation_on_guide"] = edit_df.apply(
+		lambda x: check_genome_for_mutation(genomic_range=x.Location.split(":")[1], direction=x.Direction,
+											mutations=mutation_locations, window_type="gRNA", window=None), axis=1)
+	edit_df["guide_change_mutation"] = edit_df.apply(
+		lambda x: True if mutation_locations is not None and int(x.Edit_Location) in mutation_locations else False,
+		axis=1)
+
+	edit_df["mutation_on_window"] = edit_df.apply(
+		lambda x: check_genome_for_mutation(genomic_range=x.Location.split(":")[1], direction=x.Direction,
+											mutations=mutation_locations, window_type="activity",
+											window=activity_window), axis=1)
+
+	edit_df["mutation_on_PAM"] = edit_df.apply(
+		lambda x: check_genome_for_mutation(genomic_range=x.Location.split(":")[1], direction=x.Direction,
+											mutations=mutation_locations, window_type="PAM", window=pam_window), axis=1)
+
+	return edit_df
+
+
+def extract_hgvs_df(edit_df, ensembl_object, transcript_id, edited_nucleotide,
+					new_nucleotide, activity_window, mutations):
+	"""
+	Collect Ensembl VEP information for given edits
+	:param edit_df: Edit data frame created with find_editable_nucleotide()
+	:param ensembl_object: The Ensembl Object created with Ensembl().
+	:param transcript_id: Ensembl Transcript id for the filtration
+	:param edited_nucleotide: The interested nucleotide which will be changed with BE.
+	:param new_nucleotide: The new nucleotide which will be changed to with BE.
+	:param activity_window: The location of the activity window on the protospacer sequence.
+	:param mutations: Given mutation list from the user
+	:return hgvs_df: The HGVS notations of all possible variants
+	"""
+	# For (-) direction crisprs, base reversion should be done.
+	nucleotide_dict = {"A": "T", "T": "A", "G": "C", "C": "G"}
+
+	# Collect chromosome
+	chromosome, strand = ensembl_object.chromosome, ensembl_object.strand
+	activity_window = [activity_window[0] - 1, activity_window[1]]
+
+	# Collect mutations
+	mutation_locations = collect_mutation_location(mutations)
+
+	# Transcript filtration
+	loc_edit_df = None
+	if transcript_id is not None:
+		loc_edit_df = edit_df[edit_df.Transcript_ID == transcript_id]
+	else:
+		for transcript, transcript_dict in ensembl_object.info_dict.items():
+			loc_edit_df = edit_df[edit_df.Transcript_ID == transcript]
+
+	# Each gRNA at a time
+	row_dicts = list()
+	for direction, direction_df in loc_edit_df.groupby("Direction"):
+		if direction == "left" or "left" in list(direction):
+			# Base reversion of the (-) direction crisprs
+			rev_edited_nucleotide, rev_new_nucleotide = \
+				nucleotide_dict[edited_nucleotide], nucleotide_dict[new_nucleotide]
+
+			for grna, grna_df in direction_df.groupby("gRNA_Target_Sequence"):
+
+				total_edit = len(set(list(grna_df["Edit_Location"].values)))
+
+				# For individual edits
+				for edit_loc, grna_edit_df in grna_df.groupby("Edit_Location"):
+
+					if True not in grna_edit_df.mutation_on_window.unique():
+
+						hgvs = "%s:g.%s%s>%s" \
+							   % (str(chromosome), str(edit_loc), rev_edited_nucleotide, rev_new_nucleotide)
+
+					elif len(list(grna_edit_df.mutation_on_window.unique())) == 1 and \
+							list(grna_edit_df.mutation_on_window.unique())[0] is None:
+
+						hgvs = "%s:g.%s%s>%s" \
+							   % (str(chromosome), str(edit_loc), rev_edited_nucleotide, rev_new_nucleotide)
+
+					else:
+						start = int(list(grna_df["Location"].values)[0].split(":")[1].split("-")[1]) - \
+								activity_window[1] + 1
+						end = int(list(grna_df["Location"].values)[0].split(":")[1].split("-")[1]) - \
+							  activity_window[0]
+
+						mutations_on_window, mutation_edited = list(), False
+						for mutation in mutation_locations:
+							if start <= mutation <= end:
+								mutations_on_window.append(mutation)
+							if mutation == edit_loc:
+								mutation_edited = True
+
+						if mutation_edited:
+							for mut in mutations:
+								alteration = mut.split(".")[1]
+								if int(re.match("([0-9]+)([a-z]+)", alteration.split(">")[0], re.I).groups()[0]) == int(edit_loc):
+									ref_nuc = re.match("([0-9]+)([a-z]+)", alteration.split(">")[1], re.I).groups()[0]
+									hgvs = "%s:g.%s%s>%s" \
+										   % (str(chromosome), str(edit_loc), ref_nuc, rev_new_nucleotide)
+						else:
+							hgvs = "%s:g.%s%s>%s" \
+								   % (str(chromosome), str(edit_loc), rev_edited_nucleotide, rev_new_nucleotide)
+
+					d = {"Hugo_Symbol": list(grna_edit_df["Hugo_Symbol"].values)[0], "Edit_Type": "individual",
+						 "CRISPR_PAM_Sequence": grna_edit_df["CRISPR_PAM_Sequence"].values[0],
+						 "CRISPR_PAM_Location": grna_edit_df["Location"].values[0],
+						 "gRNA_Target_Sequence": grna,
+						 "gRNA_Target_Location": grna_edit_df["Location"].values[0].split(":")[0] + ":" +
+												 str(int(
+													 grna_edit_df["Location"].values[0].split(":")[1].split("-")[
+														 0]) - 3) + "-" +
+												 grna_edit_df["Location"].values[0].split(":")[1].split("-")[1],
+						 "Total_Edit": total_edit, "Edit_Location": edit_loc,
+						 "Direction": direction,
+						 "Transcript_ID": grna_edit_df["Transcript_ID"].values[0],
+						 "Exon_ID": grna_edit_df["Exon_ID"].values[0],
+						 "guide_in_CDS": grna_edit_df["guide_in_CDS"].values[0],
+						 "gRNA_flanking_sequences": grna_edit_df["gRNA_flanking_sequences"].values[0],
+						 "Edit_in_Exon": grna_edit_df["Edit_in_Exon"].values[0],
+						 "Edit_in_CDS": grna_edit_df["Edit_in_CDS"].values[0],
+						 "mutation_on_guide": grna_edit_df["mutation_on_guide"].values[0],
+						 "guide_change_mutation": grna_edit_df["guide_change_mutation"].values[0],
+						 "mutation_on_window": grna_edit_df["mutation_on_window"].values[0],
+						 "mutation_on_PAM": grna_edit_df["mutation_on_PAM"].values[0],
+						 "# Edits/guide": grna_edit_df["# Edits/guide"].values[0],
+						 "Poly_T": grna_edit_df["Poly_T"].values[0],
+						 "GC%": grna_edit_df["GC%"].values[0],
+						 "HGVS": hgvs}
+					row_dicts.append(d)
+
+				if total_edit > 1:
+					# For multiple edits
+					start = int(list(grna_df["Location"].values)[0].split(":")[1].split("-")[1]) - \
+							activity_window[1] + 1
+					end = int(list(grna_df["Location"].values)[0].split(":")[1].split("-")[1]) - \
+						  activity_window[0]
+					position = str(start) + "_" + str(end)
+
+					activity_sites = grna[activity_window[0]: activity_window[1]]
+					activity_sites = "".join([nucleotide_dict[n] for n in activity_sites[::-1]])
+					edited_activity_sites = activity_sites.replace(rev_edited_nucleotide, rev_new_nucleotide)
+					hgvs = "%s:g.%sdelins%s" % (str(chromosome), position, edited_activity_sites)
+
+					d = {"Hugo_Symbol": list(grna_edit_df["Hugo_Symbol"].values)[0], "Edit_Type": "multiple",
+						 "CRISPR_PAM_Sequence": grna_edit_df["CRISPR_PAM_Sequence"].values[0],
+						 "CRISPR_PAM_Location": grna_edit_df["Location"].values[0],
+						 "gRNA_Target_Sequence": grna,
+						 "gRNA_Target_Location": grna_edit_df["Location"].values[0].split(":")[0] + ":" +
+												 str(int(grna_edit_df["Location"].values[0].split(":")[1].split("-")[
+															 0]) - 3) + "-" +
+												 grna_edit_df["Location"].values[0].split(":")[1].split("-")[1],
+						 "Total_Edit": total_edit,
+						 "Edit_Location": position.split("_")[0] + "-" + position.split("_")[1],
+						 "Direction": direction,
+						 "Transcript_ID": grna_edit_df["Transcript_ID"].values[0],
+						 "Exon_ID": grna_edit_df["Exon_ID"].values[0],
+						 "guide_in_CDS": grna_edit_df["guide_in_CDS"].values[0],
+						 "gRNA_flanking_sequences": grna_edit_df["gRNA_flanking_sequences"].values[0],
+						 "Edit_in_Exon": grna_edit_df["Edit_in_Exon"].values[0],
+						 "Edit_in_CDS": grna_edit_df["Edit_in_CDS"].values[0],
+						 "mutation_on_guide": grna_edit_df["mutation_on_guide"].values[0],
+						 "guide_change_mutation": grna_edit_df["guide_change_mutation"].values[0],
+						 "mutation_on_window": grna_edit_df["mutation_on_window"].values[0],
+						 "mutation_on_PAM": grna_edit_df["mutation_on_PAM"].values[0],
+						 "# Edits/guide": grna_edit_df["# Edits/guide"].values[0],
+						 "Poly_T": grna_edit_df["Poly_T"].values[0],
+						 "GC%": grna_edit_df["GC%"].values[0],
+						 "HGVS": hgvs}
+					row_dicts.append(d)
+
+		elif direction == "right" or "right" in list(direction):
+
+			for grna, grna_df in direction_df.groupby("gRNA_Target_Sequence"):
+
+				total_edit = len(set(list(grna_df["Edit_Location"].values)))
+
+				# For individual edits
+
+				for edit_loc, grna_edit_df in grna_df.groupby("Edit_Location"):
+
+					if True not in grna_edit_df.mutation_on_window.unique():
+
+						hgvs = "%s:g.%s%s>%s" % (str(chromosome), str(edit_loc), edited_nucleotide, new_nucleotide)
+
+					elif len(list(grna_edit_df.mutation_on_window.unique())) == 1 and \
+							list(grna_edit_df.mutation_on_window.unique())[0] is False:
+
+						hgvs = "%s:g.%s%s>%s" % (str(chromosome), str(edit_loc), edited_nucleotide, new_nucleotide)
+
+					else:
+						end = int(list(grna_df["Location"].values)[0].split(":")[1].split("-")[0]) + \
+							  activity_window[1] - 1
+						start = int(list(grna_df["Location"].values)[0].split(":")[1].split("-")[0]) + \
+								activity_window[0]
+
+						mutations_on_window, mutation_edited = list(), False
+						for mutation in mutation_locations:
+							if start <= mutation <= end:
+								mutations_on_window.append(mutation)
+							if mutation == edit_loc:
+								mutation_edited = True
+
+						if mutation_edited:
+							for mut in mutations:
+								alteration = mut.split(".")[1]
+								if int(re.match("([0-9]+)([a-z]+)", alteration.split(">")[0], re.I).groups()[0]) == int(edit_loc):
+									ref_nuc = re.match("([0-9]+)([a-z]+)", alteration.split(">")[1], re.I).groups()[0]
+									hgvs = "%s:g.%s%s>%s" \
+										   % (str(chromosome), str(edit_loc), ref_nuc, new_nucleotide)
+						else:
+							hgvs = "%s:g.%s%s>%s" \
+								   % (str(chromosome), str(edit_loc), edited_nucleotide, new_nucleotide)
+
+					d = {"Hugo_Symbol": list(grna_edit_df["Hugo_Symbol"].values)[0], "Edit_Type": "individual",
+						 "CRISPR_PAM_Sequence": grna_edit_df["CRISPR_PAM_Sequence"].values[0],
+						 "CRISPR_PAM_Location": grna_edit_df["Location"].values[0],
+						 "gRNA_Target_Sequence": grna,
+						 "gRNA_Target_Location": grna_edit_df["Location"].values[0].split(":")[0] + ":" +
+												 grna_edit_df["Location"].values[0].split(":")[1].split("-")[0] + "-" + \
+												 str(int(grna_edit_df["Location"].values[0].split(":")[1].split("-")[
+															 1]) - 3),
+						 "Total_Edit": total_edit, "Edit_Location": edit_loc,
+						 "Direction": direction,
+						 "Transcript_ID": grna_edit_df["Transcript_ID"].values[0],
+						 "Exon_ID": grna_edit_df["Exon_ID"].values[0],
+						 "guide_in_CDS": grna_edit_df["guide_in_CDS"].values[0],
+						 "gRNA_flanking_sequences": grna_edit_df["gRNA_flanking_sequences"].values[0],
+						 "Edit_in_Exon": grna_edit_df["Edit_in_Exon"].values[0],
+						 "Edit_in_CDS": grna_edit_df["Edit_in_CDS"].values[0],
+						 "mutation_on_guide": grna_edit_df["mutation_on_guide"].values[0],
+						 "guide_change_mutation": grna_edit_df["guide_change_mutation"].values[0],
+						 "mutation_on_window": grna_edit_df["mutation_on_window"].values[0],
+						 "mutation_on_PAM": grna_edit_df["mutation_on_PAM"].values[0],
+						 "# Edits/guide": grna_edit_df["# Edits/guide"].values[0],
+						 "Poly_T": grna_edit_df["Poly_T"].values[0],
+						 "GC%": grna_edit_df["GC%"].values[0],
+						 "HGVS": hgvs}
+
+					row_dicts.append(d)
+
+				if total_edit > 1:
+					# For multiple edits
+					end = int(list(grna_df["Location"].values)[0].split(":")[1].split("-")[0]) + \
+						  activity_window[1] - 1
+					start = int(list(grna_df["Location"].values)[0].split(":")[1].split("-")[0]) + \
+							activity_window[0]
+					position = str(start) + "_" + str(end)
+
+					activity_sites = grna[activity_window[0]: activity_window[1]]
+					edited_activity_sites = activity_sites.replace(edited_nucleotide, new_nucleotide)
+					hgvs = "%s:g.%sdelins%s" % (str(chromosome), position, edited_activity_sites)
+
+					d = {"Hugo_Symbol": grna_edit_df["Hugo_Symbol"].values[0], "Edit_Type": "multiple",
+						 "CRISPR_PAM_Sequence": grna_edit_df["CRISPR_PAM_Sequence"].values[0],
+						 "CRISPR_PAM_Location": grna_edit_df["Location"].values[0],
+						 "gRNA_Target_Sequence": grna,
+						 "gRNA_Target_Location": grna_edit_df["Location"].values[0].split(":")[0] + ":" +
+												 grna_edit_df["Location"].values[0].split(":")[1].split("-")[0] + "-" + \
+												 str(int(grna_edit_df["Location"].values[0].split(":")[1].split("-")[
+															 1]) - 3),
+						 "Total_Edit": total_edit,
+						 "Edit_Location": position.split("_")[0] + "-" + position.split("_")[1],
+						 "Direction": direction,
+						 "Transcript_ID": grna_edit_df["Transcript_ID"].values[0],
+						 "Exon_ID": grna_edit_df["Exon_ID"].values[0],
+						 "guide_in_CDS": grna_edit_df["guide_in_CDS"].values[0],
+						 "gRNA_flanking_sequences": grna_edit_df["gRNA_flanking_sequences"].values[0],
+						 "Edit_in_Exon": grna_edit_df["Edit_in_Exon"].values[0],
+						 "Edit_in_CDS": grna_edit_df["Edit_in_CDS"].values[0],
+						 "mutation_on_guide": grna_edit_df["mutation_on_guide"].values[0],
+						 "guide_change_mutation": grna_edit_df["guide_change_mutation"].values[0],
+						 "mutation_on_window": grna_edit_df["mutation_on_window"].values[0],
+						 "mutation_on_PAM": grna_edit_df["mutation_on_PAM"].values[0],
+						 "# Edits/guide": grna_edit_df["# Edits/guide"].values[0],
+						 "Poly_T": grna_edit_df["Poly_T"].values[0],
+						 "GC%": grna_edit_df["GC%"].values[0],
+						 "HGVS": hgvs}
+					row_dicts.append(d)
+
+	hgvs_df = pandas.DataFrame(row_dicts)
+	return hgvs_df
 
 
 def retrieve_vep_info(hgvs_df, ensembl_object, uniprot, transcript_id=None):
-    """
-    Collect Ensembl VEP information for given edits
-    :param hgvs_df: The HGVS notations of all possible variants
-    :param ensembl_object: The Ensembl Object created with Ensembl().
-    :param transcript_id: The interested Ensembl transcript id
-    :param uniprot: User defined uniprot if given
-    :return uniprot_results: The Uniprot IDs in which edit occurs (swissprot or trembl)
-    """
+	"""
+	Retrieve variant effect predictions using Ensembl VEP API.
+
+	Collects comprehensive variant annotation data from the Ensembl Variant Effect
+	Predictor (VEP) for all base edits identified in the analysis. Includes
+	consequence predictions, protein effects, and clinical significance.
+
+	:param hgvs_df: DataFrame containing HGVS nomenclature for all variants
+	:type hgvs_df: pandas.DataFrame
+	:param ensembl_object: Ensembl object containing gene and transcript information
+	:type ensembl_object: Ensembl
+	:param uniprot: User-specified UniProt accession ID
+	:type uniprot: str or None
+	:param transcript_id: Specific Ensembl transcript ID to analyze
+	:type transcript_id: str or None
+
+	:return: DataFrame enriched with VEP annotation data
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function makes batch requests to the VEP API for efficient processing.
+		It handles rate limiting and includes comprehensive variant consequence
+		predictions, pathogenicity scores, and clinical annotations.
+	"""
 
     chromosome, strand = ensembl_object.chromosome, ensembl_object.strand
 
@@ -2952,14 +2606,28 @@ def retrieve_vep_info(hgvs_df, ensembl_object, uniprot, transcript_id=None):
 
 
 def annotate_edits(ensembl_object, vep_df, uniprot_id):
-    """
-    Adding Uniprot API Information on VEP DF
-    :param ensembl_object: The object of the Ensembl from Ensembl API
-    :param vep_df: The data frame filled with the information from VEP API
-    :param uniprot_id: USer defined Uniprot ID - used as given
-    Ensembl Protein ID to Uniprot IDs (SwissProt/Reviewed)
-    :return: analysis_df: The data frame enriched with the information from Uniprot API
-    """
+	"""
+	Annotate base edits with UniProt protein domain and PTM information.
+
+	Enriches the VEP (Variant Effect Predictor) dataframe with additional protein
+	annotations from UniProt including protein domains, post-translational
+	modifications, and sequence mapping information.
+
+	:param ensembl_object: Ensembl object containing gene and protein sequence data
+	:type ensembl_object: Ensembl
+	:param vep_df: DataFrame containing VEP annotation results
+	:type vep_df: pandas.DataFrame
+	:param uniprot_id: User-specified UniProt accession ID (if provided)
+	:type uniprot_id: str or None
+
+	:return: DataFrame enriched with UniProt protein domain and PTM annotations
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function performs sequence alignment between Ensembl and UniProt
+		protein sequences when direct mapping is not available. It adds columns
+		for protein domains, curated domains, and post-translational modifications.
+	"""
 
     uniprot_df = vep_df.copy()
     uniprot_df["Domain"] = None
@@ -4082,10 +3750,29 @@ def summarise_guides(last_df):
 
 
 def run_offtargets(genome: str, file_name: str, final_df: str) -> bool:
-    """
-    Get the offtarget information and output to a detailed and a summary file
-    """
-    print(f"Summary Data Frame was read from {file_name}{final_df}\n")
+	"""
+	Perform off-target analysis for identified gRNA sequences.
+
+	Analyzes potential off-target sites for the gRNAs identified in the BEstimate
+	analysis using the CRISPRAnalyser tool. Generates detailed and summary reports
+	of off-target predictions.
+
+	:param genome: Genome file name/prefix for off-target analysis
+	:type genome: str
+	:param file_name: Base name for input and output files
+	:type file_name: str
+	:param final_df: Suffix for the input dataframe file
+	:type final_df: str
+
+	:return: True if off-targets were found and analyzed, False otherwise
+	:rtype: bool
+
+	.. note::
+		This function requires pre-built genome indices and databases for
+		off-target analysis. The analysis uses binary index files and
+		SQLite databases created by the x_genome.py script.
+	"""
+	print(f"Summary Data Frame was read from {file_name}{final_df}\n")
 
     file_prefix = genome.replace(".dna.chromosome", "")
     has_off_targets = x_crispranalyser.get_off_targets(
@@ -4107,10 +3794,31 @@ def run_offtargets(genome: str, file_name: str, final_df: str) -> bool:
 
 
 def main():
-    """
-    Run whole script with the input from terminal
-    :return:
-    """
+	"""
+	Execute the complete BEstimate analysis pipeline.
+
+	This is the main execution function that orchestrates the entire base editor
+	analysis workflow including gene sequence retrieval, gRNA site identification,
+	variant effect prediction, and optional off-target analysis.
+
+	The function processes command line arguments and runs the analysis pipeline
+	with the following main steps:
+
+	1. Extract gene information from Ensembl
+	2. Identify potential gRNA target sites
+	3. Find editable nucleotides within activity windows
+	4. Perform VEP annotation (if requested)
+	5. Add protein domain and PTM annotations
+	6. Generate summary reports
+	7. Perform off-target analysis (if requested)
+
+	:raises SystemExit: If no corresponding Ensembl Gene ID is found
+
+	.. note::
+		This function uses global variables for arguments and data paths.
+		It creates output files in the specified output directory and
+		prints progress messages to stdout.
+	"""
 
     global args
 
