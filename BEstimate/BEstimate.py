@@ -1044,11 +1044,35 @@ class Variant:
 		self.ancestral_populations = None
 
 	def extract_vep_obj(self, vep_json):
+		"""
+		Extract VEP response data for this variant from batch response.
+
+		Searches through the VEP batch response JSON to find the data
+		corresponding to this variant's HGVS string and stores it in
+		the vep attribute.
+
+		:param vep_json: VEP API response containing multiple variant results
+		:type vep_json: list
+		"""
 		for vep in vep_json:
 			if vep["input"] == self.hgvs:
 				self.vep = vep
 
 	def extract_hgvsp(self, hgvsp, which):
+		"""
+		Parse HGVS protein nomenclature to extract specific components.
+
+		Parses protein-level HGVS nomenclature to extract amino acid information
+		including original amino acid, new amino acid, and position.
+
+		:param hgvsp: HGVS protein nomenclature string
+		:type hgvsp: str
+		:param which: Component to extract ('old_aa', 'new_aa', or 'position')
+		:type which: str
+
+		:return: Requested component from HGVS protein nomenclature
+		:rtype: str or None
+		"""
 		aa_3to1 = {"Ala": "A", "Arg": "R", "Asn": "N", "Asp": "D", "Cys": "C", "Glu": "E", "Gln": "Q",
 				   "Gly": "G", "His": "H", "Ile": "I", "Leu": "L", "Lys": "K", "Met": "M", "Phe": "F",
 				   "Pro": "P", "Ser": "S", "Thr": "T", "Trp": "W", "Tyr": "Y", "Val": "V", "Ter": "*"}
@@ -1144,6 +1168,18 @@ class Variant:
 			return None
 
 	def extract_consequences(self):
+		"""
+		Extract and process variant consequences from VEP response data.
+
+		Parses the VEP (Variant Effect Predictor) response to extract variant
+		consequences, protein effects, clinical significance, and other annotations.
+		Sets multiple object attributes with processed consequence information.
+
+		.. note::
+			This method processes regulatory features, motif features, transcript
+			consequences, and clinical annotations from the VEP response. It also
+			determines amino acid chemical property changes and clinical significance.
+		"""
 		consequence_terms = list()
 		ancestral_populations = list()
 		# Dictionary to find the chemical properperty change due to the edit
@@ -1748,15 +1784,34 @@ def find_editable_nucleotide(crispr_df, searched_nucleotide, activity_window, pa
 def extract_hgvs_df(edit_df, ensembl_object, transcript_id, edited_nucleotide,
 					new_nucleotide, activity_window, mutations):
 	"""
-	Collect Ensembl VEP information for given edits
-	:param edit_df: Edit data frame created with find_editable_nucleotide()
-	:param ensembl_object: The Ensembl Object created with Ensembl().
-	:param transcript_id: Ensembl Transcript id for the filtration
-	:param edited_nucleotide: The interested nucleotide which will be changed with BE.
-	:param new_nucleotide: The new nucleotide which will be changed to with BE.
-	:param activity_window: The location of the activity window on the protospacer sequence.
-	:param mutations: Given mutation list from the user
-	:return hgvs_df: The HGVS notations of all possible variants
+	Generate HGVS nomenclature for base editing variants.
+
+	Creates standardized HGVS (Human Genome Variation Society) nomenclature
+	for all potential base editing sites identified in the analysis. Handles
+	both genomic and transcript-level coordinate systems.
+
+	:param edit_df: DataFrame containing editable nucleotide positions
+	:type edit_df: pandas.DataFrame
+	:param ensembl_object: Ensembl object with gene and transcript information
+	:type ensembl_object: Ensembl
+	:param transcript_id: Specific Ensembl transcript ID for analysis
+	:type transcript_id: str
+	:param edited_nucleotide: Original nucleotide to be edited
+	:type edited_nucleotide: str
+	:param new_nucleotide: Target nucleotide after base editing
+	:type new_nucleotide: str
+	:param activity_window: Activity window positions on protospacer (1-indexed)
+	:type activity_window: list
+	:param mutations: List of user-provided genomic mutations
+	:type mutations: list or None
+
+	:return: DataFrame containing HGVS nomenclature for all variants
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function handles strand orientation conversions and generates
+		both genomic (g.) and coding sequence (c.) HGVS nomenclature as
+		appropriate for VEP analysis.
 	"""
 	# For (-) direction crisprs, base reversion should be done.
 	nucleotide_dict = {"A": "T", "T": "A", "G": "C", "C": "G"}
@@ -2283,9 +2338,22 @@ def annotate_edits(ensembl_object, vep_df, uniprot_id):
 
 def extract_pis(pis):
 	"""
-	Curating the protein interaction sites from the YULab data
-	:param pis: Interaction string from YUlab data (row --> P_IRES)
-	:return: List of interacting uniprot indices
+	Extract protein interaction site positions from YULab data format.
+
+	Parses protein interaction site strings from the YULab database format
+	to extract individual amino acid positions involved in protein-protein
+	interactions. Handles various formatting patterns including ranges.
+
+	:param pis: Protein interaction site string from YULab data
+	:type pis: str
+
+	:return: List of amino acid positions involved in protein interactions
+	:rtype: list or None
+
+	.. note::
+		This function handles multiple string formats including individual
+		positions, ranges (e.g., "15-20"), and bracketed notations from
+		the YULab protein interaction database.
 	"""
 	sites = list()
 	if pis != "[]":
@@ -2611,6 +2679,24 @@ def summarise_3di(list_of_partners):
 
 
 def summarise_guides(last_df):
+	"""
+	Create summary report of gRNA guides with aggregated annotations.
+
+	Consolidates all base editing analysis results by gRNA guide, aggregating
+	multiple edit sites per guide and their associated annotations including
+	protein effects, clinical significance, and functional predictions.
+
+	:param last_df: Complete DataFrame with all edit annotations
+	:type last_df: pandas.DataFrame
+
+	:return: Summary DataFrame with one row per unique gRNA guide
+	:rtype: pandas.DataFrame
+
+	.. note::
+		This function groups edits by CRISPR_PAM_Sequence and aggregates
+		all associated annotations, consequence predictions, and functional
+		effects into a comprehensive summary for each guide.
+	"""
 	summary_df = pandas.DataFrame(index=list(range(0, len(last_df.groupby(["CRISPR_PAM_Sequence"])))),
 								  columns=["Hugo_Symbol", "CRISPR_PAM_Sequence", "CRISPR_PAM_Location",
 										   "gRNA_Target_Sequence", "gRNA_Target_Location", "gRNA_flanking_sequences",
