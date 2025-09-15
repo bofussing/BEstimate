@@ -79,3 +79,82 @@ RUN \
     && python3 -m pip install pipx \
     && pipx ensurepath \
     && pipx install poetry==$POETRY_VERSION
+
+# STEP 5: Install python packages
+# An venv in a Docker container allows isolation of dependencies
+# and prevents conflicts with the system Python packages
+#
+# - The venv is created in /opt/venv and activated for the non-root user
+# - The PATH is updated to include the venv bin directory
+# - The VIRTUAL_ENV variable is set so that Python and pip will know
+#   that they are in a virtual environment
+USER $USER_NAME
+WORKDIR $OPT_DIRECTORY
+RUN \
+    python3 -m venv ${VENV_DIRECTORY} &&  \
+    echo "source ${VENV_DIRECTORY}/bin/activate" >> "${USER_BASHRC}"
+ENV \
+    PATH="${VENV_DIRECTORY}/bin:${PATH}" \
+    VIRTUAL_ENV=${VENV_DIRECTORY}
+# Copy dependency control files and install dependencies
+# 1. only the dependency control files for Poetry (equivalent to "requirements.txt"
+#    if you have never seen Poetry *.lock and *.toml files before)
+#    The unsual square brakets in `poetry.loc[k]` provides GLOB/REGEX syntax which ensures
+#    IDEMPOTENCY for the build (i.e. Docker builds correctly the first and every subsequent time).
+#    Initially, `poetry.lock` may be absent as it is only created after the first `poetry install`
+#    This syntax lets COPY conditionally include it without the build failing if missing.
+# 2. .gitignore as it is used by precommit-check in a post build stage of the CICD
+WORKDIR $PROJECT_DIRECTORY
+COPY --chown="${USER_NAME}:${USER_NAME}" [".gitignore", "pyproject.toml", "poetry.loc[k]", "./"]
+RUN \
+    poetry install --no-root --no-directory --no-cache \
+    && chown -R "${USER_NAME}:${USER_NAME}" ${VENV_DIRECTORY}
+
+# STEP 6: Copy project files and install the project
+# Copy the src, test and other code of the project into the container.
+# Then install the project itself via Poetry
+COPY --chown="${USER_NAME}:${USER_NAME}" . "${PROJECT_DIRECTORY}"
+RUN \
+    poetry install --no-cache \
+    && chown -R "${USER_NAME}:${USER_NAME}" "${USER_DIRECTORY}" "${PROJECT_DIRECTORY}"
+
+# Use user "admin" to run the build commands below and the server itself.
+USER "${USER_NAME}"
+
+###################################
+# STAGE 2: development_only_stage #
+# - This stage is optional        #
+# - It is optimised for VSCode    #
+###################################
+
+# To develop from the container we need add some extra directories to work nicely with VSCode
+FROM base_stage AS development_only_stage
+USER root
+
+# Install hubflow to allow for git flow style development
+WORKDIR "${USER_DIRECTORY}"
+RUN git config --global --add safe.directory "${USER_DIRECTORY}/gitflow" \
+    && git config --global --add safe.directory "${USER_DIRECTORY}/gitflow/shFlags" \
+    && git clone https://github.com/datasift/gitflow \
+    && chown -R "${USER_NAME}:${USER_NAME}" gitflow \
+    && cd gitflow \
+    && ./install.sh
+
+# Return back to the project directory for the entrypoint
+WORKDIR "${PROJECT_DIRECTORY}"
+USER "${USER_NAME}"
+
+# Prepare the directory for the VSCode server extensions and bash history
+RUN mkdir -p "${USER_DIRECTORY}/.vscode-server/extensions" \
+    "${USER_DIRECTORY}/.vscode-server-insiders/extensions" \
+    && chown -R "${USER_NAME}:${USER_NAME}" \
+    "${USER_DIRECTORY}/.vscode-server" \
+    "${USER_DIRECTORY}/.vscode-server-insiders" && \
+    SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=${USER_DIRECTORY}/.commandhistory/.bash_history" \
+    && mkdir "${USER_DIRECTORY}/.commandhistory/" \
+    && touch "${USER_DIRECTORY}/.commandhistory/.bash_history" \
+    && chown -R "${USER_NAME}:${USER_NAME}" "${USER_DIRECTORY}/.commandhistory/" \
+    && echo "$SNIPPET" >> "/home/$USER_NAME/.bashrc"
+
+# Setup the pre-commit hooks so that they are run before each commit
+RUN pre-commit install --install-hooks
