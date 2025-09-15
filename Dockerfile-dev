@@ -41,7 +41,7 @@ ARG \
     PROJECT_DIRECTORY="${OPT_DIRECTORY:?}/repo"
 
 ENV \
-    PATH=${POETRY_HOME}/bin:${PIPX_BIN_DIR}:${PATH}:$ORACLE_HOME/bin
+    PATH=${POETRY_HOME}/bin:${PIPX_BIN_DIR}:${PATH}
 
 # STEP 3: Create a non-root user and directories
 # Create a non-root user to avoid running as root
