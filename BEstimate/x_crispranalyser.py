@@ -12,7 +12,7 @@ import numpy as np
 import os.path
 import sqlite3
 import time
-from crispr_analyser import search, align, utils
+from BEstimate.crispr_analyser import search, align, utils
 
 # Calculate off-targets
 
