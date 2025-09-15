@@ -16,11 +16,14 @@ include:
 
 .specific-variables:
   variables:
-    USE_DOCKER_TARGET_STAGE: 1
-    DOCKER_TARGET_STAGE: base_stage
     # We need to set this to 1 to enable BuildKit as the Dockerfile uses BuildKit features to speed up the build
+    USE_DOCKER_TARGET_STAGE: 1
+    # Docker related variables
+    DOCKER_TARGET_STAGE: base_stage
     DOCKER_BUILDKIT: 1
+    DOCKERFILE_PATH: Dockerfile-dev
     PRE_FETCH_BASE_IMAGE: python:3.12-slim-bullseye
+    # Mask variables in job logs (for file-type vars)
     USE_MASK: 1
 
 .template-wo-script-or-rules:
