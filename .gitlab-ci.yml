@@ -25,6 +25,7 @@ include:
     PRE_FETCH_BASE_IMAGE: python:3.12-slim-bullseye
     # Mask variables in job logs (for file-type vars)
     USE_MASK: 1
+    IMAGE_TAG_SUFFIX: "-dev"
 
 .template-wo-script-or-rules:
   extends:
@@ -75,9 +76,7 @@ build:
     - .template-wo-script-or-rules
     - .specific-variables
     - .component-rules-except-release
-    # - .component-script_docker-build # TODO UNCOMMENT
-  script:
-    - echo "Skipping build for now"
+    - .component-script_docker-build
   
 
 unit-test:
@@ -86,9 +85,7 @@ unit-test:
     - .template-wo-script-or-rules
     - .specific-variables
     - .component-rules-except-release
-    # - .component-script-test-unit-python # TODO UNCOMMENT
-  script:
-    - echo "Skipping unit tests for now"
+    - .component-script-test-unit-python
   
 
 e2e-test:
