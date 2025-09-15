@@ -108,3 +108,13 @@ For policies regarding the underlying data, please also refer to:
 - [Interactome Insider terms and conditions](http://interactomeinsider.yulab.org/)
 
 
+## CICD (Gitlab CI)
+The CI in `.gitlab-ci.yml` uses the [CICD template repository](https://gitlab.internal.sanger.ac.uk/team113sanger/common/cicd-template) and includes the following stages that:
+- build a Docker image
+- run tests
+- rename and publish the image to the Gitlab container registry (when everything works)
+- publish the package to GitLab PyPI (when everything works and a new tag is created)
+
+Certain CI variables are maintained in [this repository's CICD settings](https://gitlab.internal.sanger.ac.uk/sci/BEstimate/-/settings/ci_cd#js-cicd-variables-settings). Of note is:
+- `GITLAB_DEPLOY_TOKEN_RW` and `GITLAB_DEPLOY_USERNAME_RW` - used to authenticate with the GitLab container registry and PyPI (the `GITLAB_CI_TOKEN` doesn't have API write permissions)
+- `DOCKER_HUB_USER` and `DOCKER_HUB_ACCESS_TOKEN` - used to authenticate with Docker Hub to allow pull images without interfering with the Sanger/DockerHub rate limits
