@@ -1,0 +1,35 @@
+[project]
+name = "BEstimate"
+version = "1.1.0"
+description = "Estimate and Analyse Base Editor Target Site - BEstimate"
+authors = [
+    {name = "Cansu Dincer", email = "cd@sanger.ac.uk"},
+    {name = "Bo Fussing", email = "bf14@sanger.ac.uk"}
+]
+maintainers = [
+
+]
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas (>=2.2.3,<3.0.0)",
+    "requests (>=2.32,<3.0)",
+    "numpy (>=2.2.5,<3.0.0)",
+    "biopython (>=1.85,<2.0)",
+    "numba (>=0.61,<0.62)"
+]
+
+[tool.poetry]
+packages = [
+    { include = "BEstimate" }
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=8.4.2,<9.0.0)"
+]
