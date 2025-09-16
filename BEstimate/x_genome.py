@@ -85,17 +85,13 @@ def base_file_name(assembly: str, ensembl_version: str) -> str:
     return name
 
 
-def check_genome_files_exist(
-    assembly: str, ensembl_version: str, ot_path: str
-) -> bool:
+def check_genome_files_exist(assembly: str, ensembl_version: str, ot_path: str) -> bool:
     """Check to see if the genome FASTA files have been dowloaded."""
     file_directory = f"{ot_path}/genome_files"
     if os.path.exists(file_directory) is False:
         return False
     files_exist = True
-    base_name = base_file_name(
-        assembly=assembly, ensembl_version=ensembl_version
-    )
+    base_name = base_file_name(assembly=assembly, ensembl_version=ensembl_version)
     for chromosome in CHROMOSOMES:
         file_name = "%s.dna.chromosome.%s.fa.gz" % (base_name, chromosome)
         if file_name not in os.listdir(file_directory):
@@ -103,9 +99,7 @@ def check_genome_files_exist(
     return files_exist
 
 
-def fetch_genome_files(
-    assembly: str, ensembl_version: str, ot_path: str
-) -> None:
+def fetch_genome_files(assembly: str, ensembl_version: str, ot_path: str) -> None:
     """Download the genome FASTA files from Ensembl"""
     print(
         "Genome assembly is not found, BEstimate is downloading "
@@ -116,9 +110,7 @@ def fetch_genome_files(
     except FileExistsError:
         pass
 
-    file_name = base_file_name(
-        assembly=assembly, ensembl_version=ensembl_version
-    )
+    file_name = base_file_name(assembly=assembly, ensembl_version=ensembl_version)
 
     base_url = (
         "https://ftp.ensembl.org/pub/release-%s/fasta/homo_sapiens/dna"
@@ -144,9 +136,7 @@ def gather_crisprs_from_genome(
     assembly: str, ensembl_version: str, pam_sequence: str, ot_path: str
 ) -> None:
     """Gather CRISPRs from the FASTA files and generate gRNA binary index"""
-    file_name = base_file_name(
-        assembly=assembly, ensembl_version=ensembl_version
-    )
+    file_name = base_file_name(assembly=assembly, ensembl_version=ensembl_version)
     try:
         os.mkdir(f"{ot_path}/crispr_csv")
     except FileExistsError:
@@ -227,9 +217,7 @@ def import_crisprs_to_db(
     if shutil.which("sqlite3") is None:
         sys.exit("please install sqlite3 before proceeding")
 
-    file_name = base_file_name(
-        assembly=assembly, ensembl_version=ensembl_version
-    )
+    file_name = base_file_name(assembly=assembly, ensembl_version=ensembl_version)
     db_file = f"{file_name}.{pam_sequence}.db"
 
     # index the database with CRISPRs gathered in the CSV files
@@ -262,9 +250,7 @@ def check_grna_bin_exists(
     file_path = f"{ot_path}/grna_bin"
     if os.path.exists(file_path) is False:
         return False
-    file_name = base_file_name(
-        assembly=assembly, ensembl_version=ensembl_version
-    )
+    file_name = base_file_name(assembly=assembly, ensembl_version=ensembl_version)
     if "%s.%s.bin" % (file_name, pam_sequence) not in os.listdir(file_path):
         return False
     else:
@@ -275,9 +261,7 @@ def check_crispr_db_exists(
     assembly: str, ensembl_version: str, pam_sequence: str, ot_path: str
 ) -> bool:
     """Check to see if CRISPR SQLite database file exists"""
-    file_name = base_file_name(
-        assembly=assembly, ensembl_version=ensembl_version
-    )
+    file_name = base_file_name(assembly=assembly, ensembl_version=ensembl_version)
     db_file = f"{file_name}.{pam_sequence}.db"
     return os.path.exists(f"{ot_path}/crispr_db/{db_file}")
 
@@ -286,17 +270,14 @@ def check_crispr_csvs_exist(
     assembly: str, ensembl_version: str, pam_sequence: str, ot_path: str
 ) -> bool:
     """Check to see if all the indexed CRISPR csv files exist"""
-    file_name = base_file_name(
-        assembly=assembly, ensembl_version=ensembl_version
-    )
+    file_name = base_file_name(assembly=assembly, ensembl_version=ensembl_version)
     file_path = f"{ot_path}/crispr_csv"
     if os.path.exists(file_path) is False:
         return False
     files_exist = True
     for chromosome in CHROMOSOMES:
-        if (
-            f"{file_name}.chromosome.{chromosome}.{pam_sequence}.csv"
-            not in os.listdir(file_path)
+        if f"{file_name}.chromosome.{chromosome}.{pam_sequence}.csv" not in os.listdir(
+            file_path
         ):
             files_exist = False
     return files_exist

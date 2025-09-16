@@ -136,9 +136,7 @@ def index(
                 print(f"Processing {inputfile}")
             with open(inputfile, "r") as in_file:
                 for line in in_file:
-                    sequence, pam_right = parse_record(
-                        line, guide_length, pam_length
-                    )
+                    sequence, pam_right = parse_record(line, guide_length, pam_length)
                     record = sequence_to_binary_encoding(sequence, pam_right)
                     out_file.write(struct.pack("<Q", record))
                     number_of_sequences += 1
@@ -147,9 +145,7 @@ def index(
         out_file.write(struct.pack("<Q", number_of_sequences))
         if verbose:
             total = time.time() - start
-            print(
-                f"Converted {number_of_sequences} sequences in {total} seconds"
-            )
+            print(f"Converted {number_of_sequences} sequences in {total} seconds")
 
 
 def run(argv=sys.argv[1:]):

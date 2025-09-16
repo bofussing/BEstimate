@@ -96,7 +96,7 @@ build-public:
     - .template-public-wo-script-or-rules
     - .component-rules-except-release
     - .component-script_docker-build
-  
+
 unit-test-dev:
   stage: test
   extends:

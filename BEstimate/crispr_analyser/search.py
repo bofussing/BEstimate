@@ -17,10 +17,7 @@ from .utils import (
 )
 
 
-def search(
-    guides: np.ndarray,
-    sequence: str,
-    verbose: bool = False):
+def search(guides: np.ndarray, sequence: str, verbose: bool = False):
     """Search for a sequence in an indexed binary file
 
     Args:
@@ -31,9 +28,7 @@ def search(
     reverse_sequence = reverse_complement(sequence)
     query_sequence = sequence_to_binary_encoding(sequence, 1)
     reverse_query_sequence = sequence_to_binary_encoding(reverse_sequence, 0)
-    indices = np.where(
-        (guides == query_sequence) | (guides == reverse_query_sequence)
-    )
+    indices = np.where((guides == query_sequence) | (guides == reverse_query_sequence))
     # the binary index is 0-based,
     # so we add the offset and 1 to make it 1-based as per the db
     # this follows how we numbered the WGE index
