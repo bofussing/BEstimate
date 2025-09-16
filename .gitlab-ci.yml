@@ -6,7 +6,8 @@ stages:
 include:
 # DOCS: https://gitlab.internal.sanger.ac.uk/DERMATLAS/common/cicd-template/-/blob/develop/README.md
   - project: 'team113sanger/common/cicd-template'
-    ref: 0.4.0
+    ref: feature/introduce-test-security-checks
+    # ref: 0.4.0
     file: '.gitlab-ci-components.yml'
 
 
