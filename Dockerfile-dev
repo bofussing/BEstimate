@@ -28,8 +28,8 @@ ARG \
     PIP_NO_CACHE_DIR=1 \
     PIP_VERSION=23.2.1 \
     POETRY_VERSION=2.2.0 \
-    USER_NAME="admin" \
-    USER_DIRECTORY="/home/admin"
+    USER_NAME="appuser" \
+    USER_DIRECTORY="/home/appuser"
 
 ARG \
     USER_BASHRC="${USER_DIRECTORY:?}/.bashrc" \
@@ -118,7 +118,7 @@ RUN \
     poetry install --no-cache \
     && chown -R "${USER_NAME}:${USER_NAME}" "${USER_DIRECTORY}" "${PROJECT_DIRECTORY}"
 
-# Use user "admin" to run the build commands below and the server itself.
+# Use user "appuser" to run the build commands below and the server itself.
 USER "${USER_NAME}"
 
 ###################################
