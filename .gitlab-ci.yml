@@ -108,7 +108,18 @@ unit-test-public:
   extends:
     - .template-public-wo-script-or-rules
     - .component-rules-except-release
-    - .component-script-test-unit-python
+  script:
+    - echo "*** [SCRIPT] START ***"
+    - echo "I am a script - I run the Python unit tests in a docker container"
+    - echo "Unit test against CANDIDATE_IMAGE='${CANDIDATE_IMAGE:?not-set-in-before_script}'"
+    - docker pull "${CANDIDATE_IMAGE}"
+    # Test image against unit tests - it requires env vars
+    # - docker run --rm "${CANDIDATE_IMAGE}" python3 -m BEstimate --version
+    # - docker run --rm "${CANDIDATE_IMAGE}" python3 -m BEstimate --help
+    # - docker run --rm "${CANDIDATE_IMAGE}" BEstimate --version
+    - docker run --rm -v ./tests:/opt/tests "${CANDIDATE_IMAGE}" /bin/bash -c 'pip install --user pytest && ~/.local/bin/pytest /opt/tests'
+    - echo "*** [SCRIPT] END ***"
+
 
 format-test:
   stage: test
