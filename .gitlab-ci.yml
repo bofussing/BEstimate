@@ -19,7 +19,6 @@ include:
     # We need to set this to 1 to enable BuildKit as the Dockerfile uses BuildKit features to speed up the build
     USE_DOCKER_TARGET_STAGE: 1
     # Docker related variables
-    DOCKER_TARGET_STAGE: base_stage
     DOCKER_BUILDKIT: 1
     PRE_FETCH_BASE_IMAGE: python:3.12-slim-bullseye
     # Mask variables in job logs (for file-type vars)
@@ -34,6 +33,7 @@ include:
     - .component-tags-shared-runner
   variables:
     DOCKERFILE_PATH: Dockerfile
+    DOCKER_TARGET_STAGE: final_stage
     IMAGE_TAG_SUFFIX: "-public"
 
 .template-dev-wo-script-or-rules:
@@ -45,6 +45,7 @@ include:
     - .component-tags-shared-runner
   variables:
     IMAGE_TAG_SUFFIX: "-dev"
+    DOCKER_TARGET_STAGE: base_stage
     DOCKERFILE_PATH: Dockerfile-dev
 
 
