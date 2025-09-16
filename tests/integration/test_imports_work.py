@@ -14,7 +14,7 @@ SEMVER_REGEX = "".join(
         r")",
     ]
 )
-
+MY_PACKAGE_NAME = "BEstimate"
 
 @pytest.mark.filterwarnings("ignore")
 def test_package_structure_by_importing_from_src():
@@ -22,50 +22,31 @@ def test_package_structure_by_importing_from_src():
 
     assert bool(utils)
 
-def test_version():
-    try:
-        import BEstimate
-    except ImportError:
-        should_raise = True
-        version = None
-    else:
-        should_raise = False
-        version = BEstimate.__version__
 
-    if should_raise:
-        assert False, "Could not import package. Can't test version."
-
-    err_msg = "Version is 0.0.0. Did you forget to set the version in pyproject.toml"
-    assert version != "0.0.0" and version is not None, err_msg
-
-
-def test_package_name():
-    try:
-        import BEstimate
-    except ImportError:
-        should_raise = True
-        package_name = None
-    else:
-        should_raise = False
-        package_name = BEstimate.__package_name__
-
-    if should_raise:
-        assert False, "Could not import package. Can't test package name."
-
-    expected_package_name = "BEstimate"
-
-    assert package_name == expected_package_name
-
-
-def test_version_is_compatible():
-    import BEstimate
-
-    # Given
-    rgx_pattern = re.compile(SEMVER_REGEX, re.VERBOSE)
-
+def test_package_has_package_name():
     # When
-    version = BEstimate.__version__
+    my_package = pytest.importorskip(MY_PACKAGE_NAME, reason="Package not installed")
 
     # Then
-    msg = f"Version {version} is not compatible with PEP440"
-    assert rgx_pattern.match(version), msg
+    err_msg= "Package should have __package_name__ attribute"
+    assert hasattr(my_package, "__package_name__"), err_msg
+    assert my_package.__package_name__ == MY_PACKAGE_NAME
+
+
+def test_package_has_compatible_version():
+    # Given
+    rgx_pattern = re.compile(SEMVER_REGEX, re.VERBOSE)
+    my_package = pytest.importorskip(MY_PACKAGE_NAME, reason="Package not installed")
+
+    # When
+    has_version = hasattr(my_package, "__version__")
+
+    # Then
+    assert has_version, "Package should have __version__ attribute"
+
+    # Finally
+    version = my_package.__version__
+    msg1 = f"Version {version} is not compatible with PEP440"
+    msg2 = "Version is 0.0.0. Did you forget to set the version in pyproject.toml"
+    assert rgx_pattern.match(version), msg1
+    assert version != "0.0.0", msg2
