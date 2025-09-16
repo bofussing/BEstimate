@@ -1,0 +1,98 @@
+stages:
+  - build
+  - test
+  - publish
+
+include:
+# DOCS: https://gitlab.internal.sanger.ac.uk/DERMATLAS/common/cicd-template/-/blob/develop/README.md
+  - project: 'team113sanger/common/cicd-template'
+    ref: 0.4.0
+    file: '.gitlab-ci-components.yml'
+
+
+#############
+# TEMPLATES #
+#############
+
+.specific-variables:
+  variables:
+    # We need to set this to 1 to enable BuildKit as the Dockerfile uses BuildKit features to speed up the build
+    USE_DOCKER_TARGET_STAGE: 1
+    # Docker related variables
+    DOCKER_TARGET_STAGE: base_stage
+    DOCKER_BUILDKIT: 1
+    DOCKERFILE_PATH: Dockerfile-dev
+    PRE_FETCH_BASE_IMAGE: python:3.12-slim-bullseye
+    # Mask variables in job logs (for file-type vars)
+    USE_MASK: 1
+    IMAGE_TAG_SUFFIX: "-dev"
+
+.template-wo-script-or-rules:
+  extends:
+    - .component-variables
+    - .specific-variables
+    - .component-before_script
+    - .component-after_script
+    - .component-tags-shared-runner
+
+
+# .component-rules-all:
+#   rules:
+#     - if: >2-
+#         $CI_COMMIT_BRANCH =~ /^feature/ ||
+#         $CI_COMMIT_BRANCH =~ /^main/ ||
+#         $CI_COMMIT_BRANCH =~ /^master/ ||
+#         $CI_COMMIT_BRANCH =~ /^develop/ ||
+#         $CI_COMMIT_BRANCH =~ /^hotfix/ ||
+#         $CI_COMMIT_BRANCH =~ /^release/ ||
+#         $CI_COMMIT_TAG
+
+# .component-rules-except-release:
+#   rules:
+#     - if: >2-
+#         $CI_COMMIT_BRANCH =~ /^feature/ ||
+#         $CI_COMMIT_BRANCH =~ /^main/ ||
+#         $CI_COMMIT_BRANCH =~ /^master/ ||
+#         $CI_COMMIT_BRANCH =~ /^develop/ ||
+#         $CI_COMMIT_BRANCH =~ /^hotfix/ ||
+#         $CI_COMMIT_TAG
+
+# .component-rules-develop-only:
+#   rules:
+#     - if: $CI_COMMIT_BRANCH =~ /^develop/
+
+# .component-rules-tag-only:
+#   rules:
+#     - if: $CI_COMMIT_TAG
+
+
+############
+#   JOBS   #
+############
+
+build:
+  stage: build
+  extends:
+    - .template-wo-script-or-rules
+    - .specific-variables
+    - .component-rules-except-release
+    - .component-script_docker-build
+  
+
+unit-test:
+  stage: test
+  extends:
+    - .template-wo-script-or-rules
+    - .specific-variables
+    - .component-rules-except-release
+    - .component-script-test-unit-python
+  
+
+e2e-test:
+  stage: test
+  extends:
+    - .template-wo-script-or-rules
+    - .specific-variables
+    - .component-rules-except-release
+  script:
+    - echo "No e2e tests yet"

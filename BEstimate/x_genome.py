@@ -13,7 +13,7 @@ import requests
 import shutil
 import subprocess
 import sys
-from crispr_analyser import index, gather
+from BEstimate.crispr_analyser import index, gather
 
 CHROMOSOMES = list(range(1, 23)) + ["X", "Y", "MT"]
 
