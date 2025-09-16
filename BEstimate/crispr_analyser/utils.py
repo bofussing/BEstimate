@@ -28,9 +28,7 @@ class Metadata:
     assembly: str
 
 
-def get_guides(
-    guidesfile_handle: typing.BinaryIO, verbose: bool = False
-) -> np.ndarray:
+def get_guides(guidesfile_handle: typing.BinaryIO, verbose: bool = False) -> np.ndarray:
     """Get the array of guides from the binary guides file
 
     Args:
@@ -49,9 +47,7 @@ def get_guides(
     if number_of_guides != guides.size:
         raise ValueError("Invalid number of guides")
     if verbose:
-        print(
-            f"Loading took {time.time() - start:.2f} seconds", file=sys.stderr
-        )
+        print(f"Loading took {time.time() - start:.2f} seconds", file=sys.stderr)
     return guides
 
 

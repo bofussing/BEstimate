@@ -13,7 +13,7 @@ FROM python:3.12-slim-bullseye AS base_stage
 
 # STEP 2: Variables
 # ARG and ENV variables
-# 
+#
 USER root
 ENV \
     LC_ALL="en_US.UTF-8" \

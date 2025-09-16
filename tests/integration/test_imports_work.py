@@ -16,6 +16,7 @@ SEMVER_REGEX = "".join(
 )
 MY_PACKAGE_NAME = "BEstimate"
 
+
 @pytest.mark.filterwarnings("ignore")
 def test_package_structure_by_importing_from_src():
     from BEstimate.crispr_analyser import utils
@@ -28,7 +29,7 @@ def test_package_has_package_name():
     my_package = pytest.importorskip(MY_PACKAGE_NAME, reason="Package not installed")
 
     # Then
-    err_msg= "Package should have __package_name__ attribute"
+    err_msg = "Package should have __package_name__ attribute"
     assert hasattr(my_package, "__package_name__"), err_msg
     assert my_package.__package_name__ == MY_PACKAGE_NAME
 

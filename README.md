@@ -1,6 +1,6 @@
 # BEstimate
 
-BEstimate, a Python module that systematically identifies guide RNA (gRNA) targetable sites across given sequences for given Base Editors, functional and clinical effects of the potential edits on the resulting proteins and off target consequence of the found sequences. It has the ability to provide in silico analysis of the sequences to identify positions that can be editable by Base Editors, and their features before starting experiments. 
+BEstimate, a Python module that systematically identifies guide RNA (gRNA) targetable sites across given sequences for given Base Editors, functional and clinical effects of the potential edits on the resulting proteins and off target consequence of the found sequences. It has the ability to provide in silico analysis of the sequences to identify positions that can be editable by Base Editors, and their features before starting experiments.
 
 You can directly use BEstimate environment if you have conda. Please follow below:
 
@@ -19,9 +19,9 @@ If not, you should have python 3.13 and you can use requirements file:
 python3 BEstimate.py -gene SRY -assembly GRCh38 -pamseq NGG -pamwin 21-23 -actwin 4-8 -protolen 20 -edit C -edit_to T -o ../output/ -ofile SRY_CBE_NGG
 ```
 
-The user also run the same analysis for different PAM only changing -pamseq NGN. 
+The user also run the same analysis for different PAM only changing -pamseq NGN.
 
-*Warning: Be careful to write the PAM sequence to be in concordance with the length of the -pamwin. Here, NGN is in concordance with 21-23 (3 nucleotides). Otherwise, the user need to write NG -pamseq with 21-22 -pamwin.* 
+*Warning: Be careful to write the PAM sequence to be in concordance with the length of the -pamwin. Here, NGN is in concordance with 21-23 (3 nucleotides). Otherwise, the user need to write NG -pamseq with 21-22 -pamwin.*
 
 If you would like to run for a specific transcript and run the protein analysis:
 
@@ -38,7 +38,7 @@ python3 BEstimate.py -gene PIK3CA -assembly GRCh38 -pamseq NGN -pamwin 21-23 -ac
 
 ### Off-Targets
 
-To run the off-target analysis, first you need to have the [Ensembl](https://www.ensembl.org/) Genome indexed for the interested PAM sequence. 
+To run the off-target analysis, first you need to have the [Ensembl](https://www.ensembl.org/) Genome indexed for the interested PAM sequence.
 
 The `x_genome.py` script will download the required files and index the genome for CRISPRs as follows.
 - Download the specified FASTA genome assembly files from the Ensembl project,

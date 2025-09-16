@@ -62,9 +62,7 @@ def format_summary(summary: list[int]) -> str:
     )
 
 
-def fetch_crispr_cursor(
-    crispr_ids: list[int], cur: sqlite3.Cursor
-) -> sqlite3.Cursor:
+def fetch_crispr_cursor(crispr_ids: list[int], cur: sqlite3.Cursor) -> sqlite3.Cursor:
     """Get the CRISPR data for a given guide sequence and return cursor"""
     sql = (
         "SELECT seq, chr_name, chr_start, pam_right FROM crisprs "
@@ -87,9 +85,7 @@ def get_ots_for_row(
     crispr_ids = search.search(guides, sequence, True)
     # find the off-target summary for the CRISPR
     binary_sequence = utils.sequence_to_binary_encoding(sequence, 1)
-    binary_reverse_sequence = align.reverse_complement_binary(
-        binary_sequence, 20
-    )
+    binary_reverse_sequence = align.reverse_complement_binary(binary_sequence, 20)
     summary, _ = align.find_off_targets(
         guides, binary_sequence, binary_reverse_sequence
     )
@@ -120,9 +116,7 @@ def get_off_targets(
     """Generate off-target summaries and details files for a given input
     and binary guides file"""
     if not os.path.isfile(binary_index_file):
-        raise FileNotFoundError(
-            f"binary index file {binary_index_file} is not found"
-        )
+        raise FileNotFoundError(f"binary index file {binary_index_file} is not found")
     if not os.path.isfile(input_csv_file):
         raise FileNotFoundError(f"input CSV file {input_csv_file} is not found")
     if not os.path.isfile(db_file):

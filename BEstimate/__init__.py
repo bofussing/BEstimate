@@ -25,6 +25,7 @@
 
 ###### supporting Python versions below 3.8 ######
 
+
 def _set_version() -> str:  # noqa: C901
     """Set the package version from the project metadata in pyproject.toml."""
     from warnings import warn
@@ -57,4 +58,3 @@ def _set_version() -> str:  # noqa: C901
 
 __version__ = _set_version()
 __package_name__ = __package__ or __name__
-
