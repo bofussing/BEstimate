@@ -17,6 +17,20 @@ dependencies = [
     "numba (>=0.61,<0.62)"
 ]
 
+[project.scripts]
+# Scripts are defined here, and are added by Python to the PATH when the package
+# is installed. In a virtual environment, these scripts are added to the venv/bin/ directory.
+#
+# The syntax is as follows:
+# my_program = "scst_toolkit.my_subpackage:my_function_name"
+# Where:
+# - my_program is the name of the command to be run
+# - scst_toolkit is the name of your package, see 'tool.poetry.packages' above
+# - my_subpackage is the name of the subpackage, e.g. 'scripts' or 'entrypoints'
+# - my_function_name is the name of the function to be run, e.g. 'do_something' and not 'do_something()' (it should take no arguments)
+BEstimate = "BEstimate.BEstimate:main"
+
+
 [tool.poetry]
 packages = [
     { include = "BEstimate" }
