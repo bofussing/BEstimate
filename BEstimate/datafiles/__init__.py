@@ -32,7 +32,7 @@ class DataFiles:
     )
 
     @classmethod
-    def get_home_sapiens_interfaces_path(cls) -> Path:
+    def get_homo_sapiens_interfaces_path(cls) -> Path:
         """Get the path to the h_sapiens_interfaces.txt.gz file.
 
         The providence of this file is from
@@ -49,7 +49,7 @@ class DataFiles:
         return as_path
 
     @classmethod
-    def get_home_sapiens_interfaces_as_dataframe(cls) -> "pd.DataFrame":
+    def get_homo_sapiens_interfaces_as_dataframe(cls) -> "pd.DataFrame":
         """Decompress and parse the h_sapiens_interfaces.txt.gz file as a pandas DataFrame.
 
         The providence of this file is from
@@ -59,7 +59,7 @@ class DataFiles:
 
         :return: DataFrame containing the h_sapiens_interfaces data
         """
-        file_path = cls.get_home_sapiens_interfaces_path()
+        file_path = cls.get_homo_sapiens_interfaces_path()
         with gzip.open(file_path, mode="rb") as f:
             file_as_bytes = f.read()
             with io.StringIO(file_as_bytes.decode("utf-8")) as text_f:

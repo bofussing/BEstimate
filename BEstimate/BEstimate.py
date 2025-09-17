@@ -4538,7 +4538,7 @@ def main():
         prints progress messages to stdout.
     """
     # Data w/out API opportunity
-    yulab_df = DataFiles.get_home_sapiens_interfaces_as_dataframe()
+    yulab_df = DataFiles.get_homo_sapiens_interfaces_as_dataframe()
     global CLI_ARGS
     CLI_ARGS = take_input()
 

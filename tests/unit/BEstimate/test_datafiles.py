@@ -14,7 +14,7 @@ def test_DataFiles__get_home_sapiens_interfaces_path__exists() -> None:
     expected_decompressed_md5_sum = DataFiles.MD5_H_SAPIENS_INTERFACES_TXT
 
     # When
-    gzip_file = DataFiles.get_home_sapiens_interfaces_path()
+    gzip_file = DataFiles.get_homo_sapiens_interfaces_path()
 
     # Then
     assert gzip_file.exists()
@@ -36,7 +36,7 @@ def test_DataFiles__get_home_sapiens_interfaces_as_dataframe():
     expected_shape = (expected_row_count, len(expected_columns))
 
     # When
-    df = DataFiles.get_home_sapiens_interfaces_as_dataframe()
+    df = DataFiles.get_homo_sapiens_interfaces_as_dataframe()
 
     # Then
     assert not df.empty
