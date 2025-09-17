@@ -21,7 +21,7 @@ from BEstimate import constants
 # GLOBAL VARIABLES
 OT_PATH: str = ""
 OUTPUT_PATH: str = ""
-ARGS: dict[str, t.Any] = {}
+CLI_ARGS: dict[str, t.Any] = {}
 
 # -----------------------------------------------------------------------------------------#
 # Take inputs
@@ -1197,7 +1197,7 @@ class Ensembl:
             # The string concatenation seems wrong
             alignment_f = open(
                 OUTPUT_PATH
-                + args[constants.ARGS_KEY_OUTPUT_PATH]
+                + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                 + "_%s_alignment.txt" % uniprot,
                 "w",
             )
@@ -1298,7 +1298,7 @@ class Ensembl:
             # The string concatenation seems wrong
             alignment_df.to_csv(
                 OUTPUT_PATH
-                + args[constants.ARGS_KEY_OUTPUT_PATH]
+                + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                 + "_%s_alignment_df.csv" % uniprot,
                 index=True,
             )
@@ -4532,8 +4532,8 @@ def main():
     """
     # Data w/out API opportunity
     yulab_df = DataFiles.get_home_sapiens_interfaces_as_dataframe()
-
-    global args
+    global CLI_ARGS
+    CLI_ARGS = take_input()
 
     print(
         """
@@ -4545,24 +4545,24 @@ def main():
 --------------------------------------------------------------
     """
     )
-    if args["VEP"]:
+    if CLI_ARGS["VEP"]:
         vep = True
     else:
         vep = False
 
-    if args["OFF_TARGET"]:
+    if CLI_ARGS["OFF_TARGET"]:
         ot_analysis = True
     else:
         ot_analysis = False
 
-    if args["TRANSCRIPT"]:
-        transcript = args["TRANSCRIPT"]
+    if CLI_ARGS["TRANSCRIPT"]:
+        transcript = CLI_ARGS["TRANSCRIPT"]
     else:
         transcript = None
 
-    if args["MUTATION_FILE"]:
+    if CLI_ARGS["MUTATION_FILE"]:
         mutations = list()
-        for line in args["MUTATION_FILE"].readlines():
+        for line in CLI_ARGS["MUTATION_FILE"].readlines():
             mutations.append(line.strip())
     else:
         mutations = None
@@ -4573,16 +4573,16 @@ The given arguments are:\nGene: %s\nAssembl: %s\nEnsembl transcript ID: %s\nUnip
 Protospacer length: %s\nActivity window: %s\nNucleotide change: %s>%s\nVEP and Uniprot analysis: %s\nMutation on genome: %s
 Off target analysis: %s"""
         % (
-            args["GENE"],
-            args["ASSEMBLY"],
-            args["TRANSCRIPT"],
-            args["UNIPROT"],
-            args["PAMSEQ"],
-            args["PAMWINDOW"],
-            args["PROTOLEN"],
-            args["ACTWINDOW"],
-            args["EDIT"],
-            args["EDIT_TO"],
+            CLI_ARGS["GENE"],
+            CLI_ARGS["ASSEMBLY"],
+            CLI_ARGS["TRANSCRIPT"],
+            CLI_ARGS["UNIPROT"],
+            CLI_ARGS["PAMSEQ"],
+            CLI_ARGS["PAMWINDOW"],
+            CLI_ARGS["PROTOLEN"],
+            CLI_ARGS["ACTWINDOW"],
+            CLI_ARGS["EDIT"],
+            CLI_ARGS["EDIT_TO"],
             vep,
             ", ".join("" if mutations is None else mutations),
             ot_analysis,
@@ -4598,7 +4598,7 @@ Off target analysis: %s"""
     \n"""
     )
 
-    ensembl_obj = Ensembl(hugo_symbol=args["GENE"], assembly=args["ASSEMBLY"])
+    ensembl_obj = Ensembl(hugo_symbol=CLI_ARGS["GENE"], assembly=CLI_ARGS["ASSEMBLY"])
 
     ensembl_obj.extract_gene_id()
 
@@ -4634,51 +4634,51 @@ Off target analysis: %s"""
     except FileExistsError:
         pass
 
-    file_name = args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
+    file_name = CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
 
-    file_name = args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
+    file_name = CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
 
-    if args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv" not in os.listdir(
+    if CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv" not in os.listdir(
         OUTPUT_PATH
     ):
         crispr_df = extract_grna_sites(
-            hugo_symbol=args["GENE"],
-            searched_nucleotide=args["EDIT"],
+            hugo_symbol=CLI_ARGS["GENE"],
+            searched_nucleotide=CLI_ARGS["EDIT"],
             pam_window=[
-                int(args["PAMWINDOW"].split("-")[0]),
-                int(args["PAMWINDOW"].split("-")[1]),
+                int(CLI_ARGS["PAMWINDOW"].split("-")[0]),
+                int(CLI_ARGS["PAMWINDOW"].split("-")[1]),
             ],
             activity_window=[
-                int(args["ACTWINDOW"].split("-")[0]),
-                int(args["ACTWINDOW"].split("-")[1]),
+                int(CLI_ARGS["ACTWINDOW"].split("-")[0]),
+                int(CLI_ARGS["ACTWINDOW"].split("-")[1]),
             ],
-            pam_sequence=args["PAMSEQ"],
-            protospacer_length=args["PROTOLEN"],
-            flan=args["FLAN"],
-            flan_3=args["FLAN_3"],
-            flan_5=args["FLAN_5"],
+            pam_sequence=CLI_ARGS["PAMSEQ"],
+            protospacer_length=CLI_ARGS["PROTOLEN"],
+            flan=CLI_ARGS["FLAN"],
+            flan_3=CLI_ARGS["FLAN_3"],
+            flan_5=CLI_ARGS["FLAN_5"],
             ensembl_object=ensembl_obj,
         )
 
         if len(crispr_df.index) != 0:
             print("CRISPR Data Frame was created!")
         crispr_df.to_csv(
-            OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv",
+            OUTPUT_PATH + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv",
             index=False,
         )
 
         print(
             "CRISPR Data Frame was written in %s as %s\n"
-            % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv")
+            % (OUTPUT_PATH, CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv")
         )
 
     else:
         print(
             "CRISPR Data Frame was read from %s as %s\n\n"
-            % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv")
+            % (OUTPUT_PATH, CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv")
         )
         crispr_df = pandas.read_csv(
-            OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv"
+            OUTPUT_PATH + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv"
         )
     print(
         """\n
@@ -4687,19 +4687,19 @@ Off target analysis: %s"""
 --------------------------------------------------------------
     \n"""
     )
-    if args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv" not in os.listdir(
+    if CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv" not in os.listdir(
         OUTPUT_PATH
     ):
         edit_df = find_editable_nucleotide(
             crispr_df=crispr_df,
-            searched_nucleotide=args["EDIT"],
+            searched_nucleotide=CLI_ARGS["EDIT"],
             activity_window=[
-                int(args["ACTWINDOW"].split("-")[0]),
-                int(args["ACTWINDOW"].split("-")[1]),
+                int(CLI_ARGS["ACTWINDOW"].split("-")[0]),
+                int(CLI_ARGS["ACTWINDOW"].split("-")[1]),
             ],
             pam_window=[
-                int(args["PAMWINDOW"].split("-")[0]),
-                int(args["PAMWINDOW"].split("-")[1]),
+                int(CLI_ARGS["PAMWINDOW"].split("-")[0]),
+                int(CLI_ARGS["PAMWINDOW"].split("-")[1]),
             ],
             ensembl_object=ensembl_obj,
             mutations=mutations,
@@ -4709,25 +4709,25 @@ Off target analysis: %s"""
             print("Edit Data Frame was created!")
 
         edit_df.to_csv(
-            OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv",
+            OUTPUT_PATH + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv",
             index=False,
         )
 
         print(
             "Edit Data Frame was written in %s as %s"
-            % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv\n")
+            % (OUTPUT_PATH, CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv\n")
         )
 
     else:
         print(
             "Edit Data Frame was read from %s as %s\n\n"
-            % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv")
+            % (OUTPUT_PATH, CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv")
         )
         edit_df = pandas.read_csv(
-            OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
+            OUTPUT_PATH + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
         )
 
-    if args["VEP"]:
+    if CLI_ARGS["VEP"]:
         print(
             """\n
 --------------------------------------------------------------
@@ -4735,36 +4735,38 @@ Off target analysis: %s"""
 --------------------------------------------------------------
         \n"""
         )
-        file_name = args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv"
+        file_name = CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv"
         whole_vep_df = pandas.DataFrame()
-        if args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv" not in os.listdir(
+        if CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv" not in os.listdir(
             OUTPUT_PATH
         ):
-            if args[constants.ARGS_KEY_OUTPUT_PATH] + "_hgvs_df.csv" not in os.listdir(
-                OUTPUT_PATH
-            ):
+            if CLI_ARGS[
+                constants.ARGS_KEY_OUTPUT_PATH
+            ] + "_hgvs_df.csv" not in os.listdir(OUTPUT_PATH):
                 hgvs_df = extract_hgvs_df(
                     edit_df=edit_df,
                     ensembl_object=ensembl_obj,
-                    transcript_id=args["TRANSCRIPT"],
-                    edited_nucleotide=args["EDIT"],
-                    new_nucleotide=args["EDIT_TO"],
+                    transcript_id=CLI_ARGS["TRANSCRIPT"],
+                    edited_nucleotide=CLI_ARGS["EDIT"],
+                    new_nucleotide=CLI_ARGS["EDIT_TO"],
                     activity_window=[
-                        int(args["ACTWINDOW"].split("-")[0]),
-                        int(args["ACTWINDOW"].split("-")[1]),
+                        int(CLI_ARGS["ACTWINDOW"].split("-")[0]),
+                        int(CLI_ARGS["ACTWINDOW"].split("-")[1]),
                     ],
                     mutations=mutations,
                 )
                 if hgvs_df is not None and len(hgvs_df.index) != 0:
                     hgvs_df.to_csv(
                         OUTPUT_PATH
-                        + args[constants.ARGS_KEY_OUTPUT_PATH]
+                        + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                         + "_hgvs_df.csv"
                     )
                     print("HGVS nomenclatures were collected.\n")
             else:
                 hgvs_df = pandas.read_csv(
-                    OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_hgvs_df.csv"
+                    OUTPUT_PATH
+                    + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
+                    + "_hgvs_df.csv"
                 )
                 print("HGVS nomenclatures were collected.\n")
 
@@ -4772,21 +4774,21 @@ Off target analysis: %s"""
                 whole_vep_df = retrieve_vep_info(
                     hgvs_df=hgvs_df,
                     ensembl_object=ensembl_obj,
-                    uniprot=args["UNIPROT"],
-                    transcript_id=args["TRANSCRIPT"],
+                    uniprot=CLI_ARGS["UNIPROT"],
+                    transcript_id=CLI_ARGS["TRANSCRIPT"],
                 )
                 if len(whole_vep_df.index) != 0:
                     print("VEP Data Frame was created!")
                     whole_vep_df.to_csv(
                         OUTPUT_PATH
-                        + args[constants.ARGS_KEY_OUTPUT_PATH]
+                        + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                         + "_vep_df.csv"
                     )
                     print(
                         "VEP Data Frame was written in %s as %s\n\n"
                         % (
                             OUTPUT_PATH,
-                            args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv",
+                            CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv",
                         )
                     )
                 else:
@@ -4794,10 +4796,13 @@ Off target analysis: %s"""
         else:
             print(
                 "VEP Data Frame was read from %s as %s\n\n"
-                % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv")
+                % (
+                    OUTPUT_PATH,
+                    CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv",
+                )
             )
             whole_vep_df = pandas.read_csv(
-                OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv"
+                OUTPUT_PATH + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv"
             )
 
         print(
@@ -4808,21 +4813,21 @@ Off target analysis: %s"""
         \n"""
         )
         protein_df = pandas.DataFrame()
-        if args[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv" not in os.listdir(
-            OUTPUT_PATH
-        ):
+        if CLI_ARGS[
+            constants.ARGS_KEY_OUTPUT_PATH
+        ] + "_protein_df.csv" not in os.listdir(OUTPUT_PATH):
             print("Adding Uniprot ID, corresponding Domain and PTM information..")
             if len(whole_vep_df.index) != 0:
                 uniprot_df = annotate_edits(
                     ensembl_object=ensembl_obj,
                     vep_df=whole_vep_df,
-                    uniprot_id=args["UNIPROT"],
+                    uniprot_id=CLI_ARGS["UNIPROT"],
                 )
                 if uniprot_df is not None and len(uniprot_df.index) != 0:
                     print("Adding affected interface and interacting partners..")
                     protein_df = annotate_interface(
                         annotated_edit_df=uniprot_df,
-                        uniprot_id=args["UNIPROT"],
+                        uniprot_id=CLI_ARGS["UNIPROT"],
                         yulab_df=yulab_df,
                     )
 
@@ -4830,7 +4835,7 @@ Off target analysis: %s"""
                         print("Protein Data Frame was created!")
                         protein_df.to_csv(
                             OUTPUT_PATH
-                            + args[constants.ARGS_KEY_OUTPUT_PATH]
+                            + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                             + "_protein_df.csv",
                             index=False,
                         )
@@ -4838,7 +4843,7 @@ Off target analysis: %s"""
                             "Protein Data Frame was written in %s as %s\n"
                             % (
                                 OUTPUT_PATH,
-                                args[constants.ARGS_KEY_OUTPUT_PATH]
+                                CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                                 + "_protein_df.csv\n",
                             )
                         )
@@ -4855,15 +4860,17 @@ Off target analysis: %s"""
                 "Protein Data Frame was read from %s as %s\n\n"
                 % (
                     OUTPUT_PATH,
-                    args[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv",
+                    CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv",
                 )
             )
             protein_df = pandas.read_csv(
-                OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv"
+                OUTPUT_PATH
+                + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
+                + "_protein_df.csv"
             )
 
         if len(protein_df.index) > 0:
-            if args[
+            if CLI_ARGS[
                 constants.ARGS_KEY_OUTPUT_PATH
             ] + "_summary_df.csv" not in os.listdir(OUTPUT_PATH):
                 print("Summarising information..")
@@ -4873,7 +4880,7 @@ Off target analysis: %s"""
                     print("Summary Data Frame was created!")
                     summary_df.to_csv(
                         OUTPUT_PATH
-                        + args[constants.ARGS_KEY_OUTPUT_PATH]
+                        + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                         + "_summary_df.csv",
                         index=False,
                     )
@@ -4882,7 +4889,8 @@ Off target analysis: %s"""
                         "Summary Data Frame was written in %s as %s\n\n"
                         % (
                             OUTPUT_PATH,
-                            args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv",
+                            CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
+                            + "_summary_df.csv",
                         )
                     )
                 else:
@@ -4893,12 +4901,12 @@ Off target analysis: %s"""
                     "Summary Data Frame was read from %s as %s\n\n"
                     % (
                         OUTPUT_PATH,
-                        args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv",
+                        CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv",
                     )
                 )
                 summary_df = pandas.read_csv(
                     OUTPUT_PATH
-                    + args[constants.ARGS_KEY_OUTPUT_PATH]
+                    + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                     + "_summary_df.csv"
                 )
                 final_df = "_summary_df.csv"
@@ -4908,7 +4916,7 @@ Off target analysis: %s"""
     else:
         final_df = "_edit_df.csv"
 
-    if args["OFF_TARGET"]:
+    if CLI_ARGS["OFF_TARGET"]:
         print(
             """\n
 --------------------------------------------------------------
@@ -4926,17 +4934,17 @@ Off target analysis: %s"""
 
         except FileExistsError:
             pass
-        if args["ASSEMBLY"] == "GRCh37":
+        if CLI_ARGS["ASSEMBLY"] == "GRCh37":
             file_main_text = "Homo_sapiens.GRCh37.%s.%s" % (
-                args["VERSION"],
-                args["PAMSEQ"],
+                CLI_ARGS["VERSION"],
+                CLI_ARGS["PAMSEQ"],
             )
-        elif args["ASSEMBLY"] == "GRCh38":
-            file_main_text = "Homo_sapiens.GRCh38.%s" % args["PAMSEQ"]
+        elif CLI_ARGS["ASSEMBLY"] == "GRCh38":
+            file_main_text = "Homo_sapiens.GRCh38.%s" % CLI_ARGS["PAMSEQ"]
         if "%s.bin" % file_main_text in os.listdir("%sgrna_bin/" % OT_PATH):
             _ = run_offtargets(
                 genome=file_main_text,
-                file_name=args[constants.ARGS_KEY_OUTPUT_PATH],
+                file_name=CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH],
                 final_df=final_df,
             )
         else:
@@ -4944,15 +4952,6 @@ Off target analysis: %s"""
 
 
 if __name__ == "__main__":
-
-    # -----------------------------------------------------------------------------------------#
-    # Retrieve input
-
-    args = take_input()
-
-    ###########################################################################################
-    # Execution
-
     main()
 
     print(
