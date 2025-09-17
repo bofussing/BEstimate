@@ -12,7 +12,9 @@ starting experiments.
 ## Table of Contents
 - [Quick start installation](#quick-start-installation)
 - [Run BEstimate](#run-bestimate)
-- [Off-Targets](#off-targets)
+    - [Examples with BEstimate](#examples-with-bestimate)
+    - [Off-Target examples](#off-targets-examples)
+    - [BEstimate command line options](#command-line-options)
 - [Contact](#contact)
 - [License](#license)
 
@@ -27,6 +29,10 @@ pip install git+https://gitlab.internal.sanger.ac.uk/sci/BEstimate.git
 ```
 
 ## Run BEstimate
+
+### Examples with BEstimate
+
+For example, if you would like to run for the *SRY* gene with NGG PAM sequence, with CBE (C to T editing) and without VEP and protein analysis:
 
 ```bash
 BEstimate -gene SRY -assembly GRCh38 -pamseq NGG -pamwin 21-23 -actwin 4-8 -protolen 20 -edit C -edit_to T -o ../output/ -ofile SRY_CBE_NGG
@@ -49,7 +55,7 @@ Prepare a `PIK3CA_mutation_file.txt` for example with 3:g.179218303G>A
 BEstimate -gene PIK3CA -assembly GRCh38 -pamseq NGN -pamwin 21-23 -actwin 4-8 -protolen 20 -mutation_file PIK3CA_mutation_file.txt -edit A -edit_to G -vep -ofile PIK3CA_NGN_ABE_mE545K -o ../output/
 ```
 
-### Off-Targets
+### Off-Target examples
 
 To run the off-target analysis, first you need to have the [Ensembl](https://www.ensembl.org/) Genome indexed for the interested PAM sequence.
 
@@ -85,6 +91,42 @@ Then, you can run the off-target analysis, see below for the *BRAF* gene:
 
 ```bash
 BEstimate -gene BRAF -assembly GRCh38 -pamseq NGN -edit A -edit_to G -vep -ot -o ../output -ot_path ../offtargets -ofile BRAF_ABE_NGN
+```
+
+### BEstimate command line options
+
+```bash
+BEstimate --help
+usage: BEstimate [inputs]
+
+********************************** Find and Analyse Base Editor sites **********************************
+
+Mandatory Inputs:
+  -h, --help            show this help message and exit
+  --version             Show program's version number and exit.
+  -gene GENE            The hugo symbol of the interested gene!
+  -assembly ASSEMBLY    The genome assembly that will be used!
+  -transcript TRANSCRIPT
+                        The interested ensembl transcript id
+  -uniprot UNIPROT      The interested Uniprot id
+  -pamseq PAMSEQ        The PAM sequence in which features used for searching activity window and editable nucleotide.
+  -pamwin PAMWINDOW     The index of the PAM sequence when starting from the first index of protospacer as 1.
+  -actwin ACTWINDOW     The index of the activity window when starting from the first index of protospacer as 1.
+  -protolen PROTOLEN    The total protospacer and PAM length.
+  -vep                  The boolean option if user wants to analyse the edits through VEP and Uniprot.
+  -mutation_file MUTATION_FILE
+                        If you have more than one mutations, a file for the mutations on the interested gene that you need to integrate into guide and/or annotation analysis
+  -flank                The boolean option if the user wants to add flanking sequences of the gRNAs
+  -flank3 FLAN_3        The number of nucleotides in the 3' flanking region
+  -flank5 FLAN_5        The number of nucleotides in the 5' flanking region
+  -edit {A,T,G,C}       The nucleotide which will be edited.
+  -edit_to {A,T,G,C}    The nucleotide after edition.
+  -o OUTPUT_PATH        The path for output. If not specified the current directory will be used!
+  -ofile OUTPUT_PATH    The output file name, if not specified "position" will be used!
+  -ot                   Whether off targets will be computed or not
+  -genome GENOME        (If -ot provided) name of the genome file
+  -v_ensembl VERSION    The ensembl version in which genome will be retrieved (if the assembly is GRCh37 then please use <=75)
+  -ot_path OT_PATH
 ```
 
 ## Contact
