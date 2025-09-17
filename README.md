@@ -1,22 +1,35 @@
 # BEstimate
 
-BEstimate, a Python module that systematically identifies guide RNA (gRNA) targetable sites across given sequences for given Base Editors, functional and clinical effects of the potential edits on the resulting proteins and off target consequence of the found sequences. It has the ability to provide in silico analysis of the sequences to identify positions that can be editable by Base Editors, and their features before starting experiments.
+BEstimate, a Python package that systematically identifies guide RNA (gRNA)
+targetable sites across given sequences for given Base Editors, functional and
+clinical effects of the potential edits on the resulting proteins and off target
+consequence of the found sequences.
 
-You can directly use BEstimate environment if you have conda. Please follow below:
+It has the ability to provide in silico analysis of the sequences to identify
+positions that can be editable by Base Editors, and their features before
+starting experiments.
 
-- `git clone https://github.com/CansuDincer/BEstimate.git`
-- `cd BEstimate`
-- `conda-env create -n bestimate -f=bestimate.yml`
-- `conda activate bestimate`
+## Table of Contents
+- [Quick start installation](#quick-start-installation)
+- [Run BEstimate](#run-bestimate)
+- [Off-Targets](#off-targets)
+- [Contact](#contact)
+- [License](#license)
 
-If not, you should have python 3.13 and you can use requirements file:
+## Quick start installation
 
-- `pip3 install -r requirements.txt`
+To install BEstimate, you require Python 3.12 or higher. It is recommended to use a virtual environment.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install git+https://gitlab.internal.sanger.ac.uk/sci/BEstimate.git
+```
 
 ## Run BEstimate
 
 ```bash
-python3 BEstimate.py -gene SRY -assembly GRCh38 -pamseq NGG -pamwin 21-23 -actwin 4-8 -protolen 20 -edit C -edit_to T -o ../output/ -ofile SRY_CBE_NGG
+BEstimate -gene SRY -assembly GRCh38 -pamseq NGG -pamwin 21-23 -actwin 4-8 -protolen 20 -edit C -edit_to T -o ../output/ -ofile SRY_CBE_NGG
 ```
 
 The user also run the same analysis for different PAM only changing -pamseq NGN.
@@ -26,14 +39,14 @@ The user also run the same analysis for different PAM only changing -pamseq NGN.
 If you would like to run for a specific transcript and run the protein analysis:
 
 ```bash
-python3 BEstimate.py -gene SRY -assembly GRCh38 -transcript ENST00000383070 -edit C -edit_to T -vep -o ../output/ -ofile SRY_CBE_NGG
+BEstimate -gene SRY -assembly GRCh38 -transcript ENST00000383070 -edit C -edit_to T -vep -o ../output/ -ofile SRY_CBE_NGG
 ```
 
 If you would like to run with a specific point mutation, with NGN PAM and with VEP and protein analysis:
 Prepare a `PIK3CA_mutation_file.txt` for example with 3:g.179218303G>A
 
 ```bash
-python3 BEstimate.py -gene PIK3CA -assembly GRCh38 -pamseq NGN -pamwin 21-23 -actwin 4-8 -protolen 20 -mutation_file PIK3CA_mutation_file.txt -edit A -edit_to G -vep -ofile PIK3CA_NGN_ABE_mE545K -o ../output/
+BEstimate -gene PIK3CA -assembly GRCh38 -pamseq NGN -pamwin 21-23 -actwin 4-8 -protolen 20 -mutation_file PIK3CA_mutation_file.txt -edit A -edit_to G -vep -ofile PIK3CA_NGN_ABE_mE545K -o ../output/
 ```
 
 ### Off-Targets
@@ -71,7 +84,7 @@ The gathering of CRISPRs from the genome assembly takes a while and requires a f
 Then, you can run the off-target analysis, see below for the *BRAF* gene:
 
 ```bash
-python3 BEstimate.py -gene BRAF -assembly GRCh38 -pamseq NGN -edit A -edit_to G -vep -ot -o ../output -ot_path ../offtargets -ofile BRAF_ABE_NGN
+BEstimate -gene BRAF -assembly GRCh38 -pamseq NGN -edit A -edit_to G -vep -ot -o ../output -ot_path ../offtargets -ofile BRAF_ABE_NGN
 ```
 
 ## Contact
