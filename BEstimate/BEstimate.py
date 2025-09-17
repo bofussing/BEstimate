@@ -10,13 +10,14 @@
 # Import necessary packages
 import typing as t
 import os, sys, pandas, re, argparse, requests, json, itertools, pickle, time, numpy, gzip
-import x_crispranalyser
 from Bio import SeqIO
 from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
 
 from BEstimate.datafiles import DataFiles
 from BEstimate import constants
+from BEstimate import x_crispranalyser
+import BEstimate
 
 # GLOBAL VARIABLES
 OT_PATH: str = ""
@@ -42,7 +43,7 @@ def take_input() -> dict[str, t.Any]:
         Default values are provided for most optional parameters.
     """
     parser = argparse.ArgumentParser(
-        prog="BEstimate",
+        prog=constants.PROGRAM_NAME,
         usage="%(prog)s [inputs]",
         description="""
                                      **********************************
@@ -57,7 +58,13 @@ def take_input() -> dict[str, t.Any]:
             group.title = "Mandatory Inputs"
 
     # BASIC INFORMATION
-
+    version_str = f"{constants.PROGRAM_NAME} {BEstimate.__version__}".strip()
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=version_str,
+        help="Show program's version number and exit.",
+    )
     parser.add_argument(
         "-gene",
         dest="GENE",
@@ -4949,11 +4956,6 @@ Off target analysis: %s"""
             )
         else:
             print("Please download and index your genome file\nRun x_genome.py first.")
-
-
-if __name__ == "__main__":
-    main()
-
     print(
         """\n
 --------------------------------------------------------------
@@ -4961,3 +4963,4 @@ if __name__ == "__main__":
 --------------------------------------------------------------
     \n"""
     )
+    return
