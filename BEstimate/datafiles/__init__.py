@@ -18,6 +18,8 @@ class DataFiles:
     MD5_H_SAPIENS_INTERFACES_GZIP: t.ClassVar[str] = (
         constants.CHECKSUM_MD5_H_SAPIENS_INTERFACES_GZIP
     )
+    # Checksum from http://interactomeinsider.yulab.org/downloads/interfacesHQ/H_sapiens_interfacesHQ.txt
+    # as of 2025-08-17
     MD5_H_SAPIENS_INTERFACES_TXT: t.ClassVar[str] = (
         constants.CHECKSUM_MD5_H_SAPIENS_INTERFACES_TXT
     )
@@ -33,9 +35,10 @@ class DataFiles:
     def get_home_sapiens_interfaces_path(cls) -> Path:
         """Get the path to the h_sapiens_interfaces.txt.gz file.
 
-        The providence of this file is likely from
-        https://pioneer.yulab.org/downloads, then postprocessed and
-        truncated.
+        The providence of this file is from
+        http://interactomeinsider.yulab.org/downloads.html for 'Highest
+        Confidence Interfaces'. Specifically, the file
+        http://interactomeinsider.yulab.org/downloads/interfacesHQ/H_sapiens_interfacesHQ.txt
 
         :return: h_sapiens_interfaces.txt.gz file path
         """
@@ -49,9 +52,10 @@ class DataFiles:
     def get_home_sapiens_interfaces_as_dataframe(cls) -> "pd.DataFrame":
         """Decompress and parse the h_sapiens_interfaces.txt.gz file as a pandas DataFrame.
 
-        The providence of this file is likely from
-        https://pioneer.yulab.org/downloads, then postprocessed and
-        truncated.
+        The providence of this file is from
+        http://interactomeinsider.yulab.org/downloads.html for 'Highest
+        Confidence Interfaces'. Specifically, the file
+        http://interactomeinsider.yulab.org/downloads/interfacesHQ/H_sapiens_interfacesHQ.txt
 
         :return: DataFrame containing the h_sapiens_interfaces data
         """
