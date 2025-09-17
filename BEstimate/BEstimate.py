@@ -8,11 +8,14 @@
 # -----------------------------------------------------------------------------------------#
 
 # Import necessary packages
+import typing as t
 import os, sys, pandas, re, argparse, requests, json, itertools, pickle, time, numpy, gzip
 import x_crispranalyser
 from Bio import SeqIO
 from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
+
+from BEstimate.datafiles import DataFiles
 
 
 # -----------------------------------------------------------------------------------------#
@@ -3345,7 +3348,7 @@ def annotate_edits(
     return uniprot_df
 
 
-def extract_pis(pis: str) -> list | None:
+def extract_pis(pis: str) -> list[int] | None:
     """
     Extract protein interaction site positions from YULab data format.
 
@@ -3362,7 +3365,7 @@ def extract_pis(pis: str) -> list | None:
         positions, ranges (e.g., "15-20"), and bracketed notations from
         the YULab protein interaction database.
     """
-    sites = list()
+    sites: list[int] = list()
     if pis != "[]":
         for site in pis.split(","):
             if site[0] == "[" and site[-1] != "]":
@@ -3408,17 +3411,20 @@ def extract_pis(pis: str) -> list | None:
         return None
 
 
-def collect_pis(uniprot: str) -> dict:
+def collect_pis(
+    uniprot: str, yulab_df: pandas.DataFrame
+) -> dict[int, list[dict[str, str]]]:
     """
     Collecting protein interaction position for a given uniprot id
 
     :param uniprot: Uniprot ID
+    :param yulab_df: A DataFrame corresponding to the YULab protein interaction data
 
     :return: positional dictionary specify the position and their source and partner (PDB/I3D/ECLAIR)
     """
     pis_dict = dict()
-    df1 = yulab[yulab.P1 == uniprot]
-    df2 = yulab[yulab.P2 == uniprot]
+    df1 = yulab_df[yulab_df.P1 == uniprot]
+    df2 = yulab_df[yulab_df.P2 == uniprot]
 
     if len(df1.index) != 0:
         for partner, partner_df in df1.groupby("P2"):
@@ -3451,16 +3457,20 @@ def collect_pis(uniprot: str) -> dict:
     return pis_dict
 
 
-def disrupt_interface(uniprot: str, pos: str) -> bool:
+def disrupt_interface(
+    uniprot: str, pos: int, yulab_df: pandas.DataFrame
+) -> tuple[str | None, str | None, str | None]:
     """
     Checking if the given position disrupts the interfaces in the given uniprot
 
     :param uniprot: Uniprot ID
     :param pos: Uniprot index
+    :param yulab_df: A DataFrame corresponding to the YULab protein interaction data
 
-    :return: True/False, effected PDB partners, effected I3D partners, effected ECLAIR partners
+    :return: A 3-tuple of effected PDB partners, effected I3D partners, effected
+        ECLAIR partners, if any
     """
-    d = collect_pis(uniprot)
+    d = collect_pis(uniprot, yulab_df)
     if pos in d.keys():
         pdb_partner_list = list()
         i3d_partner_list = list()
@@ -3493,16 +3503,19 @@ def disrupt_interface(uniprot: str, pos: str) -> bool:
 
 
 def annotate_interface(
-    annotated_edit_df: pandas.DataFrame, uniprot_id: str
+    annotated_edit_df: pandas.DataFrame,
+    uniprot_id: t.Optional[str],
+    yulab_df: pandas.DataFrame,
 ) -> pandas.DataFrame:
     """
     Add Interactome Insider protein interface information for edgetic perturbation.
 
-    :param annotated_edit_df: Data frame created with annotate_edits
+    :param annotated_edit_df: DataFrame created with annotate_edits
+    :param uniprot_id: UniProt Accession ID, if specified
+    :param yulab_df: A DataFrame corresponding to the YULab protein interaction data
 
     :return: Added interface annotation on edit table
     """
-    global yulab
     server_url = "https://www.ebi.ac.uk/proteins/api/proteins?"
     df = annotated_edit_df.copy()
     df["is_disruptive_interface_EXP"] = None
@@ -3526,7 +3539,7 @@ def annotate_interface(
             and pandas.isna(group[1]) == False
             and group[1] != ""
         ):
-            if group[0] in list(yulab.P1) or group[0] in list(yulab.P2):
+            if group[0] in list(yulab_df.P1) or group[0] in list(yulab_df.P2):
                 all_pdb_partners, all_i3d_partners, all_eclair_partners = (
                     list(),
                     list(),
@@ -3534,7 +3547,7 @@ def annotate_interface(
                 )
                 if len(group[1].split(";")) == 1:
                     pdb_partners, i3d_partners, eclair_partners = disrupt_interface(
-                        uniprot=group[0], pos=int(group[1])
+                        uniprot=group[0], pos=int(group[1]), yulab_df=yulab_df
                     )
                     if pdb_partners is not None:
                         all_pdb_partners.append(pdb_partners)
@@ -3545,7 +3558,7 @@ def annotate_interface(
                 else:
                     for pos in group[1].split(";"):
                         pdb_partners, i3d_partners, eclair_partners = disrupt_interface(
-                            uniprot=group[0], pos=int(pos)
+                            uniprot=group[0], pos=int(pos), yulab_df=yulab_df
                         )
                         if pdb_partners is not None:
                             all_pdb_partners.append(pdb_partners)
@@ -4466,6 +4479,8 @@ def main():
         It creates output files in the specified output directory and
         prints progress messages to stdout.
     """
+    # Data w/out API opportunity
+    yulab_df = DataFiles.get_home_sapiens_interfaces_as_dataframe()
 
     global args
 
@@ -4725,7 +4740,9 @@ Off target analysis: %s"""
                 if uniprot_df is not None and len(uniprot_df.index) != 0:
                     print("Adding affected interface and interacting partners..")
                     protein_df = annotate_interface(
-                        annotated_edit_df=uniprot_df, uniprot_id=args["UNIPROT"]
+                        annotated_edit_df=uniprot_df,
+                        uniprot_id=args["UNIPROT"],
+                        yulab_df=yulab_df,
                     )
 
                     if protein_df is not None and len(protein_df.index) != 0:
@@ -4839,13 +4856,6 @@ if __name__ == "__main__":
             ot_path = args["OT_PATH"] + "/"
     else:
         ot_path = os.getcwd() + "/../offtargets/"
-
-    # -----------------------------------------------------------------------------------------#
-    # Data w/out API opportunity
-
-    yulab = pandas.read_table(os.getcwd() + "/../data/H_sapiens_interfaces.txt")
-
-    # -----------------------------------------------------------------------------------------#
 
     ###########################################################################################
     # Execution
