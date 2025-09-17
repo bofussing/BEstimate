@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # The current implementation of BEstimate.py accesses
-# some files that are assumed to be in the same folder. 
-# This forces Bestimate.py to be called from within the 
-# BEstimate/ folder and therefore we have to run this 
+# some files that are assumed to be in the same folder.
+# This forces Bestimate.py to be called from within the
+# BEstimate/ folder and therefore we have to run this
 # script as:
 #   bash ../tests/e2e_test.sh
 
 # Prepare output folder
 mkdir -p tests/output
 
-# Run Bestimate 
+# Run Bestimate
 python3 BEstimate.py -gene SRY \
                      -assembly GRCh38 \
                      -pamseq NGG \
@@ -20,19 +20,19 @@ python3 BEstimate.py -gene SRY \
                      -edit C \
                      -edit_to T \
                      -o tests/output/ \
-                     -ofile SRY_CBE_NGG 
+                     -ofile SRY_CBE_NGG
 
 # check exit status
 status=$?
 if [ $status -ne 0 ];
-then 
+then
     printf 'BEstimate failed with status "%s"' "$status";
     exit -1
 fi;
 
 # compare output with expected
-file1="tests/output/_SRY_CBE_NGG_edit_df.csv"
-file2="../tests/data/A_SRY_CBE_NGG_edit_df_expected.csv"
+file1="tests/output/SRY_CBE_NGG_edit_df.csv"
+file2="../tests/data/SRY_CBE_NGG_edit_df_expected.csv"
 
 results_dif=$( diff $file1 $file2 | wc -l )
 if [ "$results_dif" -ne 0 ]; then
