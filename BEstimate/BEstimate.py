@@ -21,6 +21,7 @@ from BEstimate import constants
 # GLOBAL VARIABLES
 OT_PATH: str = ""
 OUTPUT_PATH: str = ""
+ARGS: dict[str, t.Any] = {}
 
 # -----------------------------------------------------------------------------------------#
 # Take inputs
@@ -1110,7 +1111,6 @@ class Ensembl:
         """
         TODO documentation
         """
-        global OUTPUT_PATH
         uniprot = uniprot.split(".")[0]
         protein_ensembl = "/xrefs/id/{0}?external_db=Uniprot/SWISSPROT%".format(
             ensembl_pid
@@ -1192,6 +1192,9 @@ class Ensembl:
                     self.p_sequence = "".join(seq_request.text.split("\n")[1:])
                     ensembl_seq = self.p_sequence
 
+            # TODO: This can't be correct?
+            # OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] === OUTPUT_PATH + OUTPUT_PATH
+            # The string concatenation seems wrong
             alignment_f = open(
                 OUTPUT_PATH
                 + args[constants.ARGS_KEY_OUTPUT_PATH]
@@ -1290,6 +1293,9 @@ class Ensembl:
             )
             alignment_df.loc[flagged_ind, "inconsistent"] = True
 
+            # TODO: This can't be correct?
+            # OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] === OUTPUT_PATH + OUTPUT_PATH
+            # The string concatenation seems wrong
             alignment_df.to_csv(
                 OUTPUT_PATH
                 + args[constants.ARGS_KEY_OUTPUT_PATH]
