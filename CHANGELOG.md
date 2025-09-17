@@ -51,7 +51,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI uses security configurations including IDS-related tasks
 
 ## [1.1.0] - 2025-05-29
+_AI generated summary_
+
+### Major Focus: Off-target reporting improvements and efficiency optimizations
+
+### Added
+- Timing output for get_off_targets function
+- Array of tuples implementation for improved performance
+
+### Changed
+- Large refactor of off-target logic replacing Pandas DataFrame with array of tuples for efficiency
+- Updated run_offtargets function to work as module
+- README updates and formatting improvements
+
+### Fixed
+- Off-targets reporting functionality
+- Various formatting issues suggested by flake8 and black
+
+### Removed
+- Multiprocessing implementation (was slower than serial processing)
 
 ## [1.0.0] - 2025-05-08
+_AI generated summary_
+
+### Major Focus: CRISPR-Analyser integration and core logic improvements
+
+### Added
+- Replacement logic in BEstimate/crispr_analyser
+- Paper reproducibility features (Jupyter notebooks and environment)
+- Genome retrieval functionality improvements
+- Requirements file for dependencies
+
+### Changed
+- Updated Conda environment file (bestimate.yml)
+- README updates for x_genome.py and general documentation
+
+### Fixed
+- Critical bugs in check_index_file() parameters
+- Various module import and path issues
+
+### Removed
+- Dependency on external CRISPR-Analyser
+- Running of x_index.py
 
 ## [0.9.0] - 2025-05-05
+_AI generated summary_
+
+### Major Focus: Core algorithm development and biological annotations
+
+### Added
+- Initial protein-protein interaction (PPI) analysis
+- VEP (Variant Effect Predictor) integration
+- Uniprot integration for protein change positions
+- Post-translational modification (PTM) analysis
+- Multiple transcript and variant effect handling
+- CDS regions and UTR analysis with MANE transcripts
+- Interface disruption annotation
+- Ensembl gene ID handling with chromosome control
+- Poly-T information support
+- GNU GPL v3 Licence
+
+### Changed
+- Enhanced protein analysis with percentage calculations
+- Improved interaction site extraction
+- Result file organization (CRISPR, Edit, Annotation)
