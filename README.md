@@ -9,6 +9,16 @@ It has the ability to provide in silico analysis of the sequences to identify
 positions that can be editable by Base Editors, and their features before
 starting experiments.
 
+|                          Main                          |                         Develop                          |
+| :----------------------------------------------------: | :------------------------------------------------------: |
+| [![pipeline status][main-pipe-badge]][main-branch] | [![pipeline status][develop-pipe-badge]][develop-branch] |
+
+[main-pipe-badge]: https://gitlab.internal.sanger.ac.uk/sci/BEstimate/badges/main/pipeline.svg
+[main-branch]: https://gitlab.internal.sanger.ac.uk/sci/BEstimate/-/commits/main
+[develop-pipe-badge]: https://gitlab.internal.sanger.ac.uk/sci/BEstimate/badges/develop/pipeline.svg
+[develop-branch]: https://gitlab.internal.sanger.ac.uk/sci/BEstimate/-/commits/develop
+
+
 ## Table of Contents
 - [Quick start installation](#quick-start-installation)
 - [Run BEstimate](#run-bestimate)
