@@ -21,7 +21,6 @@ from BEstimate import constants
 # GLOBAL VARIABLES
 OT_PATH: str = ""
 OUTPUT_PATH: str = ""
-path = "Foo"
 
 # -----------------------------------------------------------------------------------------#
 # Take inputs
@@ -1111,7 +1110,7 @@ class Ensembl:
         """
         TODO documentation
         """
-        global path
+        global OUTPUT_PATH
         uniprot = uniprot.split(".")[0]
         protein_ensembl = "/xrefs/id/{0}?external_db=Uniprot/SWISSPROT%".format(
             ensembl_pid
@@ -1194,7 +1193,7 @@ class Ensembl:
                     ensembl_seq = self.p_sequence
 
             alignment_f = open(
-                path
+                OUTPUT_PATH
                 + args[constants.ARGS_KEY_OUTPUT_PATH]
                 + "_%s_alignment.txt" % uniprot,
                 "w",
@@ -1292,7 +1291,7 @@ class Ensembl:
             alignment_df.loc[flagged_ind, "inconsistent"] = True
 
             alignment_df.to_csv(
-                path
+                OUTPUT_PATH
                 + args[constants.ARGS_KEY_OUTPUT_PATH]
                 + "_%s_alignment_df.csv" % uniprot,
                 index=True,
@@ -4449,9 +4448,9 @@ def run_offtargets(genome: str, file_name: str, final_df: str) -> bool:
 
     file_prefix = genome.replace(".dna.chromosome", "")
     has_off_targets = x_crispranalyser.get_off_targets(
-        input_csv_file=f"{path}{file_name}{final_df}",
+        input_csv_file=f"{OUTPUT_PATH}{file_name}{final_df}",
         binary_index_file=f"{OT_PATH}grna_bin/{file_prefix}.bin",
-        output_csv_file_base=f"{path}{file_name}",
+        output_csv_file_base=f"{OUTPUT_PATH}{file_name}",
         db_file=f"{OT_PATH}crispr_db/{file_prefix}.db",
     )
 
@@ -4624,13 +4623,8 @@ Off target analysis: %s"""
 --------------------------------------------------------------
     \n"""
     )
-    path = ""
-    if args["OUTPUT_PATH"][-1] == "/":
-        path = args["OUTPUT_PATH"]
-    else:
-        path = args["OUTPUT_PATH"] + "/"
     try:
-        os.mkdir(path)
+        os.mkdir(OUTPUT_PATH)
     except FileExistsError:
         pass
 
@@ -4638,7 +4632,9 @@ Off target analysis: %s"""
 
     file_name = args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
 
-    if args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv" not in os.listdir(path):
+    if args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv" not in os.listdir(
+        OUTPUT_PATH
+    ):
         crispr_df = extract_grna_sites(
             hugo_symbol=args["GENE"],
             searched_nucleotide=args["EDIT"],
@@ -4661,21 +4657,22 @@ Off target analysis: %s"""
         if len(crispr_df.index) != 0:
             print("CRISPR Data Frame was created!")
         crispr_df.to_csv(
-            path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv", index=False
+            OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv",
+            index=False,
         )
 
         print(
             "CRISPR Data Frame was written in %s as %s\n"
-            % (path, args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv")
+            % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv")
         )
 
     else:
         print(
             "CRISPR Data Frame was read from %s as %s\n\n"
-            % (path, args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv")
+            % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv")
         )
         crispr_df = pandas.read_csv(
-            path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv"
+            OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv"
         )
     print(
         """\n
@@ -4684,7 +4681,9 @@ Off target analysis: %s"""
 --------------------------------------------------------------
     \n"""
     )
-    if args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv" not in os.listdir(path):
+    if args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv" not in os.listdir(
+        OUTPUT_PATH
+    ):
         edit_df = find_editable_nucleotide(
             crispr_df=crispr_df,
             searched_nucleotide=args["EDIT"],
@@ -4704,21 +4703,22 @@ Off target analysis: %s"""
             print("Edit Data Frame was created!")
 
         edit_df.to_csv(
-            path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv", index=False
+            OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv",
+            index=False,
         )
 
         print(
             "Edit Data Frame was written in %s as %s"
-            % (path, args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv\n")
+            % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv\n")
         )
 
     else:
         print(
             "Edit Data Frame was read from %s as %s\n\n"
-            % (path, args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv")
+            % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv")
         )
         edit_df = pandas.read_csv(
-            path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
+            OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv"
         )
 
     if args["VEP"]:
@@ -4731,9 +4731,11 @@ Off target analysis: %s"""
         )
         file_name = args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv"
         whole_vep_df = pandas.DataFrame()
-        if args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv" not in os.listdir(path):
+        if args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv" not in os.listdir(
+            OUTPUT_PATH
+        ):
             if args[constants.ARGS_KEY_OUTPUT_PATH] + "_hgvs_df.csv" not in os.listdir(
-                path
+                OUTPUT_PATH
             ):
                 hgvs_df = extract_hgvs_df(
                     edit_df=edit_df,
@@ -4749,12 +4751,14 @@ Off target analysis: %s"""
                 )
                 if hgvs_df is not None and len(hgvs_df.index) != 0:
                     hgvs_df.to_csv(
-                        path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_hgvs_df.csv"
+                        OUTPUT_PATH
+                        + args[constants.ARGS_KEY_OUTPUT_PATH]
+                        + "_hgvs_df.csv"
                     )
                     print("HGVS nomenclatures were collected.\n")
             else:
                 hgvs_df = pandas.read_csv(
-                    path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_hgvs_df.csv"
+                    OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_hgvs_df.csv"
                 )
                 print("HGVS nomenclatures were collected.\n")
 
@@ -4768,21 +4772,26 @@ Off target analysis: %s"""
                 if len(whole_vep_df.index) != 0:
                     print("VEP Data Frame was created!")
                     whole_vep_df.to_csv(
-                        path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv"
+                        OUTPUT_PATH
+                        + args[constants.ARGS_KEY_OUTPUT_PATH]
+                        + "_vep_df.csv"
                     )
                     print(
                         "VEP Data Frame was written in %s as %s\n\n"
-                        % (path, args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv")
+                        % (
+                            OUTPUT_PATH,
+                            args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv",
+                        )
                     )
                 else:
                     print("VEP Data Frame cannot be created because it is empty!")
         else:
             print(
                 "VEP Data Frame was read from %s as %s\n\n"
-                % (path, args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv")
+                % (OUTPUT_PATH, args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv")
             )
             whole_vep_df = pandas.read_csv(
-                path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv"
+                OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_vep_df.csv"
             )
 
         print(
@@ -4794,7 +4803,7 @@ Off target analysis: %s"""
         )
         protein_df = pandas.DataFrame()
         if args[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv" not in os.listdir(
-            path
+            OUTPUT_PATH
         ):
             print("Adding Uniprot ID, corresponding Domain and PTM information..")
             if len(whole_vep_df.index) != 0:
@@ -4814,7 +4823,7 @@ Off target analysis: %s"""
                     if protein_df is not None and len(protein_df.index) != 0:
                         print("Protein Data Frame was created!")
                         protein_df.to_csv(
-                            path
+                            OUTPUT_PATH
                             + args[constants.ARGS_KEY_OUTPUT_PATH]
                             + "_protein_df.csv",
                             index=False,
@@ -4822,7 +4831,7 @@ Off target analysis: %s"""
                         print(
                             "Protein Data Frame was written in %s as %s\n"
                             % (
-                                path,
+                                OUTPUT_PATH,
                                 args[constants.ARGS_KEY_OUTPUT_PATH]
                                 + "_protein_df.csv\n",
                             )
@@ -4838,30 +4847,35 @@ Off target analysis: %s"""
         else:
             print(
                 "Protein Data Frame was read from %s as %s\n\n"
-                % (path, args[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv")
+                % (
+                    OUTPUT_PATH,
+                    args[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv",
+                )
             )
             protein_df = pandas.read_csv(
-                path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv"
+                OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] + "_protein_df.csv"
             )
 
         if len(protein_df.index) > 0:
             if args[
                 constants.ARGS_KEY_OUTPUT_PATH
-            ] + "_summary_df.csv" not in os.listdir(path):
+            ] + "_summary_df.csv" not in os.listdir(OUTPUT_PATH):
                 print("Summarising information..")
                 summary_df = summarise_guides(last_df=protein_df)
 
                 if summary_df is not None and len(summary_df.index) != 0:
                     print("Summary Data Frame was created!")
                     summary_df.to_csv(
-                        path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv",
+                        OUTPUT_PATH
+                        + args[constants.ARGS_KEY_OUTPUT_PATH]
+                        + "_summary_df.csv",
                         index=False,
                     )
                     final_df = "_summary_df.csv"
                     print(
                         "Summary Data Frame was written in %s as %s\n\n"
                         % (
-                            path,
+                            OUTPUT_PATH,
                             args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv",
                         )
                     )
@@ -4871,10 +4885,15 @@ Off target analysis: %s"""
             else:
                 print(
                     "Summary Data Frame was read from %s as %s\n\n"
-                    % (path, args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv")
+                    % (
+                        OUTPUT_PATH,
+                        args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv",
+                    )
                 )
                 summary_df = pandas.read_csv(
-                    path + args[constants.ARGS_KEY_OUTPUT_PATH] + "_summary_df.csv"
+                    OUTPUT_PATH
+                    + args[constants.ARGS_KEY_OUTPUT_PATH]
+                    + "_summary_df.csv"
                 )
                 final_df = "_summary_df.csv"
         else:
