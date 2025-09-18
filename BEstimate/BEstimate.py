@@ -58,7 +58,7 @@ def take_input() -> dict[str, t.Any]:
             group.title = "Mandatory Inputs"
 
     # BASIC INFORMATION
-    version_str = f"{constants.PROGRAM_NAME} {BEstimate.__version__}".strip()
+    version_str = f"{constants.PROGRAM_NAME} {BEstimate.__version__}"
     parser.add_argument(
         "--version",
         action="version",
@@ -4475,7 +4475,7 @@ def run_offtargets(genome: str, file_name: str, final_df: str) -> bool:
 
 
 def _clean_and_globalize_output_path(
-    orginal_args: dict[str, t.Any]
+    orginal_args: dict[str, t.Any],
 ) -> dict[str, t.Any]:
     arg_key = constants.ARGS_KEY_OUTPUT_PATH
     has_truthy_value = bool(orginal_args.get(arg_key, ""))
