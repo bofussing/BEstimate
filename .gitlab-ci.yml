@@ -20,7 +20,7 @@ include:
     USE_DOCKER_TARGET_STAGE: 1
     # Docker related variables
     DOCKER_BUILDKIT: 1
-    PRE_FETCH_BASE_IMAGE: python:3.12-slim-bullseye
+    PRE_FETCH_BASE_IMAGE: python:3.12-slim-trixie
     # Mask variables in job logs (for file-type vars)
     USE_MASK: 1
 
