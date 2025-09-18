@@ -27,6 +27,14 @@ starting experiments.
     - [BEstimate command line options](#command-line-options)
 - [Contact](#contact)
 - [License](#license)
+- [Development](#development)
+    - [Software Requirements](#software-requirements)
+    - [One time setup](#one-time-setup)
+    - [Adding new dependencies](#adding-new-dependencies)
+    - [Formatting and pre-commit hooks](#formatting-and-pre-commit-hooks)
+    - [Testing](#testing)
+    - [CICD (Gitlab CI)](#cicd-gitlab-ci)
+- [Git and Tagged releases](#git-and-tagged-releases)
 
 ## Quick start installation
 
@@ -173,13 +181,261 @@ For policies regarding the underlying data, please also refer to:
 - [Interactome Insider terms and conditions](http://interactomeinsider.yulab.org/)
 
 
-## CICD (Gitlab CI)
-The CI in `.gitlab-ci.yml` uses the [CICD template repository](https://gitlab.internal.sanger.ac.uk/team113sanger/common/cicd-template) and includes the following stages that:
-- build a Docker image
-- run tests
-- rename and publish the image to the Gitlab container registry (when everything works)
-- publish the package to GitLab PyPI (when everything works and a new tag is created)
+## Development
+
+### Software Requirements
+Development requires are quite minimal with two approachs - with a *Virtual Environment* or with a *VSCode devcontainer*.
+
+<details>
+<summary><strong>Virtual Environment Requirements</strong></summary>
+
+- **Git Hubflow** tools:
+    - On linux see [hubflow installation instructions](https://github.com/dockstore/hubflow)
+    - On MacOS with Homebrew: `brew install hubflow`
+- **Python 3.12 or higher**. It is up to the developer how to install a specific
+  Python if the system default is not suitable.
+    - It's recommended to use [pyenv](https://github.com/pyenv/pyenv/blob/master/README.md#installation) as it offers flexibility in managing multiple Python versions. Works on Linux and MacOS, and installing via the command line is straightforward:
+        ```bash
+        curl https://pyenv.run | bash
+        pyenv install 3.12.4
+        cd <project-repository-directory>
+        pyenv local 3.12.4
+        ```
+    - Via poetry itself. Since poetry 2.1.0 running `poetry python install 3.12` will [install a standalone Python](https://python-poetry.org/docs/cli/#python-install)
+    - On Linux via `apt-get` typically the default python3 is old so we need to add a PPA for newer versions. Famously is the [Deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
+        ```bash
+        sudo apt update
+        sudo apt install -y software-properties-common
+
+        # Add the Deadsnakes PPA and refresh package lists
+        sudo add-apt-repository -y ppa:deadsnakes/ppa
+        sudo apt update
+
+        # Install Python 3.12, its dev headers, and venv support
+        sudo apt install -y python3.12 python3.12-dev python3.12-venv python3.12-distutils
+
+        # Bootstrap pip for this interpreter, then upgrade basics
+        python3.12 --version  # sanity check
+        python3.12 -m ensurepip --upgrade
+        python3.12 -m pip install --upgrade pip setuptools wheel
+        ```
+    - On MacOS via [Homebrew](https://brew.sh/)
+        ```bash
+        brew update
+        brew install python@3.12
+        python3.12 --version # sanity check
+        ```
+- **Poetry 2.2 or higher**. Poetry is used for dependency management and packaging, there are [multiple ways to install it](https://python-poetry.org/docs/#installation). The official docs recommend will have up-to-date instructions, but in summary:
+    - On Linux one typically `sudo apt-get installs pipx` and then `pipx install poetry` to ensure Poetry is up to date and isolated from system Python packages. *Do not* directly `apt-get install poetry` as that version is out of date and not compatible with this project.
+    - On MacOS, if you have Homebrew installed, you can use it to install Poetry `brew update && brew install poetry`.
+
+</details>
+
+<details>
+<summary><strong>VSCode devcontainer Requirements</strong></summary>
+
+Working with a devcontainer is the easiest way to get started with development
+as all dependencies and tools are pre-installed. Working with VSCode is optional
+as other IDEs/editors can attach to a running container or you can run commands
+directly in the container with `docker run`.
+
+You will need:
+- **Docker**
+- (Optional) **VSCode** with the [Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+Up-to-date instructions for installing Docker and VSCode can be found on their
+respective websites, but the [VSCode instructions summarise all the main steps](https://code.visualstudio.com/docs/devcontainers/containers).
+
+An important note about SSH and working with GitLab/GitHub from within a
+devcontainer: forward your keys via your ssh-agent:
+
+`~/.ssh/config` on your Laptop/Workstation (not OpenStack/Farm or other remote host):
+```bash
+Host *
+  AddKeysToAgent yes
+  UseKeychain yes
+  IdentityFile ~/.ssh/id_rsa
+  TCPKeepAlive yes
+  ServerAliveInterval 120
+```
+
+</details>
+
+### One time setup
+
+<details>
+<summary><strong>Virtual Environment Setup</strong></summary>
+
+The process to setup the development environment is as follows:
+
+```bash
+git clone https://gitlab.internal.sanger.ac.uk/sci/BEstimate.git
+cd BEstimate
+python3.12 -m venv .venv
+source .venv/bin/activate
+poetry install
+pre-commit install --install-hooks
+```
+
+</details>
+
+<details>
+<summary><strong>DevContainer Setup</strong></summary>
+
+The process to setup the development environment is as follows:
+
+```bash
+git clone https://gitlab.internal.sanger.ac.uk/sci/BEstimate.git
+cd BEstimate
+docker build -t bestimate-dev:local -f .devcontainer/Dockerfile .
+docker run -it -v $(pwd):/opt/repo  bestimate-dev:local bash
+
+# Inside the container
+pwd # should be /opt/repo
+BEstimate --version # should show version
+exit # exit the container
+```
+
+Next, if using VSCode, open the project folder within VSCode and
+open the command palette (`Shift+CMD+P` or `Shift+CTRL+P`) and select
+`"Remote-Containers: Rebuild and Reopen in Container"`
+</details>
+
+### Adding new dependencies
+
+To add a new dependency, use Poetry to add it to the `pyproject.toml` and
+`poetry.lock` files:
+```bash
+poetry add <package-name>
+# or for a development dependency:
+poetry add --group dev <package-name>
+```
+
+To constrain the version of a package, see the [Poetry versioning docs](https://python-poetry.org/docs/dependency-specification/#version-constraints).
+
+**What does the lockfile `poetry.lock` do ?**
+
+<details>
+<summary>Expand for lockfile summary</summary>
+
+The `poetry.lock` file ensures that everyone working on the project uses the
+same versions of dependencies, which helps to avoid "it works on my machine"
+problems.
+
+It separates dependency-of-dependencies from human-specified dependencies in
+`pyproject.toml`, and pins them to specific versions.
+
+However the lockfile is a 'disposable' file in that it can be regenerated from
+the `pyproject.toml` file if needed. The lockfile should always be committed to
+version control. If there are merge conflicts in the lockfile, discard it and
+regenerate it with `poetry lock`.
+
+Finally, downstream users of the `BEstimate` package do not benefit from the
+lockfile, and install the dependencies as specified in `pyproject.toml` (but not
+dev dependencies).
+
+</details>
+
+**What does the `requirements.txt` do ?**
+
+<details>
+<summary>Expand for requirements.txt summary</summary>
+
+The `requirements.txt` file is generated by Poetry and pre-commit as an artifact
+and to allow developers to install dependencies with `pip install -r requirements.txt`
+in environments where Poetry is not available. It should not be manually edited.
+
+</details>
+
+### Formatting and pre-commit hooks
+
+This project uses [pre-commit](https://pre-commit.com/) to manage elements of
+code formatting and linting. See the [One time setup](#one-time-setup) section
+for installation and setup.
+
+Pre-commit will run automatically on `git commit`. Generally pre-commit will
+modify and correct files, these need to be staged again before the commit can
+complete.
+
+To run the pre-commit hooks manually:
+```bash
+pre-commit run -a
+```
+
+To push a commit while bypassing pre-commit (there are reasons to do this):
+```bash
+git commit --no-verify -m "My commit message"
+```
+
+The pre-commit configuration is in `.pre-commit-config.yaml` and includes:
+- built-in hooks for checking for end-of-file newlines, trailing whitespace and
+  ensuring valid JSON, YAML and TOML files
+- [black](https://github.com/psf/black) - Python code formatter
+- [flake8](https://flake8.pycqa.org/en/latest/) - Python code linter
+- [poetry-check](https://python-poetry.org/docs/pre-commit-hooks/)
+- [poetry-export](https://github.com/python-poetry/poetry-plugin-export) - generates `requirements.txt` from `poetry.lock`
+
+### Testing
+
+Tests are in the `tests/` directory and use [pytest](https://docs.pytest.org/).
+
+To run the tests:
+
+```bash
+pytest tests/
+```
+
+Or with the development Docker image:
+
+```bash
+docker build -f Dockerfile-dev -t 'bestimate-dev:local' .
+docker run -it --rm bestimate-dev:local pytest tests/
+```
+
+Or with the public image:
+
+```bash
+docker build -t bestimate:local -f Dockerfile .
+# The tests don't exist in the image and pytest is not installed
+docker run -it --rm \
+    -v ./tests/:/opt/repo/tests \
+    -w /opt/repo \
+    bestimate:local \
+    bash -c  'pip install pytest && python -m pytest tests/'
+```
+
+### CICD (Gitlab CI)
+
+The CI in `.gitlab-ci.yml` uses the [CICD template repository](https://gitlab.internal.sanger.ac.uk/team113sanger/common/cicd-template) and includes the following **stages** that:
+- **build** two Docker images, from `Dockerfile` and `Dockerfile.dev`
+- **tests** runs `e2e`, `pytest` and `pre-commit` against the built images
+- **publish**
+    - if on a tag e.g `1.2.3` publishes the image to GitLab Container Registry as `<image>:<tag>` and publishes the package to GitLab PyPI as `<package>:<tag>`
+    - if on `main` branch, publishes the image to Docker Hub as `<image>:latest`
+    - if on `develop` branch, publishes the image to Docker Hub as `<image>:develop-latest`
 
 Certain CI variables are maintained in [this repository's CICD settings](https://gitlab.internal.sanger.ac.uk/sci/BEstimate/-/settings/ci_cd#js-cicd-variables-settings). Of note is:
 - `GITLAB_DEPLOY_TOKEN_RW` and `GITLAB_DEPLOY_USERNAME_RW` - used to authenticate with the GitLab container registry and PyPI (the `GITLAB_CI_TOKEN` doesn't have API write permissions)
 - `DOCKER_HUB_USER` and `DOCKER_HUB_ACCESS_TOKEN` - used to authenticate with Docker Hub to allow pull images without interfering with the Sanger/DockerHub rate limits
+
+## Git and Tagged releases
+This repo the GitFlow branching model and uses [hubflow](https://datasift.github.io/gitflow/TheHubFlowTools.html) as a tool to enable this from the CLI.
+
+```bash
+# Switch to the develop branch
+git checkout develop
+
+# Start a new release branch e.g. 0.1.0 not v0.1.0
+git hf release start <project_version>
+```
+
+Now, do the following things:
+* `CHANGELOG.md`: Under the heading of the newest release version, describe what was changed, fixed, added.
+* `pyproject.toml`: Increment the project version to the current release version
+* Commit these changes
+
+Finally
+
+```bash
+git hf release finish <project_version>
+```
