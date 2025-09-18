@@ -7,6 +7,8 @@ FROM python:3.12-slim-bullseye AS base_stage
 # Set environment variables
 USER root
 ENV \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
     PYTHONUNBUFFERED=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     PIP_NO_CACHE_DIR=1 \
