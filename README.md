@@ -23,7 +23,7 @@ starting experiments.
 - [Quick start installation](#quick-start-installation)
 - [Run BEstimate](#run-bestimate)
     - [Examples with BEstimate](#examples-with-bestimate)
-    - [Off-Target examples](#off-targets-examples)
+    - [Off-Target Analysis](#off-target-analysis)
     - [Command line usage and options](#command-line-usage-and-options)
 - [Contact](#contact)
 - [License](#license)
@@ -73,7 +73,7 @@ Prepare a `PIK3CA_mutation_file.txt` for example with 3:g.179218303G>A
 BEstimate -gene PIK3CA -assembly GRCh38 -pamseq NGN -pamwin 21-23 -actwin 4-8 -protolen 20 -mutation_file PIK3CA_mutation_file.txt -edit A -edit_to G -vep -ofile PIK3CA_NGN_ABE_mE545K -o ../output/
 ```
 
-### Off-Target examples
+### Off-Target Analysis
 
 To run the off-target analysis, first you need to have the [Ensembl](https://www.ensembl.org/) Genome indexed for the interested PAM sequence.
 
@@ -470,7 +470,7 @@ Certain CI variables are maintained in [this repository's CICD settings](https:/
 - `DOCKER_HUB_USER` and `DOCKER_HUB_ACCESS_TOKEN` - used to authenticate with Docker Hub to allow pull images without interfering with the Sanger/DockerHub rate limits
 
 ## Git and Tagged releases
-This repo the GitFlow branching model and uses [hubflow](https://datasift.github.io/gitflow/TheHubFlowTools.html) as a tool to enable this from the CLI.
+This repo implements the GitFlow branching model and uses [hubflow](https://github.com/dockstore/hubflow) as a tool to enable this from the CLI.
 
 ```bash
 # Switch to the develop branch
