@@ -26,7 +26,7 @@ ARG \
     PYTHONUNBUFFERED=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_VERSION=23.2.1 \
+    PIP_VERSION=25.2 \
     POETRY_VERSION=2.2.0 \
     USER_NAME="appuser" \
     USER_DIRECTORY="/home/appuser"
