@@ -2,6 +2,9 @@
 ############################################
 # Stage 1: Base setup with dependencies
 ############################################
+
+# If you change the base image, you will need to update the
+# PRE_FETCH_BASE_IMAGE variable in the .gitlab-ci.yml file also
 FROM python:3.12-slim-trixie AS base_stage
 
 # Set environment variables
