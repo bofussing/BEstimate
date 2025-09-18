@@ -339,7 +339,7 @@ The process to setup the development environment is as follows:
 git clone https://gitlab.internal.sanger.ac.uk/sci/BEstimate.git
 cd BEstimate
 docker build -t bestimate-dev:local -f .devcontainer/Dockerfile .
-docker run -it -v $(pwd):/opt/repo  bestimate-dev:local bash
+docker run -it --rm -v $(pwd):/opt/repo  bestimate-dev:local bash
 
 # Inside the container
 pwd # should be /opt/repo
