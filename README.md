@@ -253,7 +253,7 @@ Development requires are quite minimal with two approachs - with a *Virtual Envi
         pyenv local 3.12.4
         ```
     - Via poetry itself. Since poetry 2.1.0 running `poetry python install 3.12` will [install a standalone Python](https://python-poetry.org/docs/cli/#python-install)
-    - On Linux via `apt-get` typically the default python3 is old so we need to add a PPA for newer versions. Famously is the [Deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
+    - On Ubuntu Linux via `apt-get` typically the default python3 is old so we need to add a PPA for newer versions. Famously is the [Deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
         ```bash
         sudo apt update
         sudo apt install -y software-properties-common
