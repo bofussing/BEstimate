@@ -4,8 +4,14 @@ version = "1.1.0"
 description = "Estimate and Analyse Base Editor Target Site - BEstimate"
 authors = [
     {name = "Cansu Dincer", email = "cd@sanger.ac.uk"},
-    {name = "Bo Fussing", email = "bf14@sanger.ac.uk"}
+    {name = "Bo Fussing", email = "bf15@sanger.ac.uk"}
 ]
+maintainers = [
+    {name = "Bo Fussing", email = "bf15@sanger.ac.uk"},
+    {name = "Jose Dianes Santos", email = "jd31@sanger.ac.uk"},
+    {name = "Ian Vermes", email = "iv3@sanger.ac.uk"},
+]
+
 license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.12"
@@ -22,10 +28,9 @@ dependencies = [
 # is installed. In a virtual environment, these scripts are added to the venv/bin/ directory.
 #
 # The syntax is as follows:
-# my_program = "scst_toolkit.my_subpackage:my_function_name"
+# my_program = "BEstimate.my_subpackage:my_function_name"
 # Where:
 # - my_program is the name of the command to be run
-# - scst_toolkit is the name of your package, see 'tool.poetry.packages' above
 # - my_subpackage is the name of the subpackage, e.g. 'scripts' or 'entrypoints'
 # - my_function_name is the name of the function to be run, e.g. 'do_something' and not 'do_something()' (it should take no arguments)
 BEstimate = "BEstimate.BEstimate:main"
