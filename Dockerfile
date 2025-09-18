@@ -2,7 +2,7 @@
 ############################################
 # Stage 1: Base setup with dependencies
 ############################################
-FROM python:3.12-slim-bullseye AS base_stage
+FROM python:3.12-slim-trixie AS base_stage
 
 # Set environment variables
 USER root
