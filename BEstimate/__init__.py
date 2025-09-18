@@ -53,7 +53,7 @@ def _set_version() -> str:  # noqa: C901
             "mode with `poetry install` or `pip install -e .`"
         )
         warn(msg)
-    return version
+    return version.strip()
 
 
 __version__ = _set_version()

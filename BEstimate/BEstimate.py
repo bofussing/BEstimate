@@ -10,6 +10,7 @@
 # Import necessary packages
 import typing as t
 import os, sys, pandas, re, argparse, requests, json, itertools, pickle, time, numpy, gzip
+import warnings
 from Bio import SeqIO
 from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
@@ -58,7 +59,7 @@ def take_input() -> dict[str, t.Any]:
             group.title = "Mandatory Inputs"
 
     # BASIC INFORMATION
-    version_str = f"{constants.PROGRAM_NAME} {BEstimate.__version__}".strip()
+    version_str = f"{constants.PROGRAM_NAME} {BEstimate.__version__}"
     parser.add_argument(
         "--version",
         action="version",
@@ -4475,7 +4476,7 @@ def run_offtargets(genome: str, file_name: str, final_df: str) -> bool:
 
 
 def _clean_and_globalize_output_path(
-    orginal_args: dict[str, t.Any]
+    orginal_args: dict[str, t.Any],
 ) -> dict[str, t.Any]:
     arg_key = constants.ARGS_KEY_OUTPUT_PATH
     has_truthy_value = bool(orginal_args.get(arg_key, ""))
@@ -4964,3 +4965,12 @@ Off target analysis: %s"""
     \n"""
     )
     return
+
+
+if __name__ == "__main__":
+    deprecation_msg = (
+        f"You cannot run 'python {__file__}' directly, please use the CLI command "
+        f"'{constants.PROGRAM_NAME}' instead."
+    )
+    warnings.warn(deprecation_msg, DeprecationWarning)
+    sys.exit(1)

@@ -8,11 +8,17 @@
 
 import argparse
 import csv
-import numpy as np
 import os.path
 import sqlite3
 import time
-from crispr_analyser import search, align, utils
+import sys
+import warnings
+
+import numpy as np
+
+from BEstimate.crispr_analyser import search, align, utils
+from BEstimate import constants
+import BEstimate
 
 # Calculate off-targets
 
@@ -20,11 +26,19 @@ from crispr_analyser import search, align, utils
 # capture command line arguments
 
 
-def take_input():
+def take_input() -> argparse.Namespace:
+    program_name = constants.SECONDARY_PROGRAM_NAME_X_CRISPRANALYZER
+    version_str = f"{program_name} {BEstimate.__version__}"
     parser = argparse.ArgumentParser(
-        prog="x_crispranalyser.py",
+        prog=program_name,
         description="Script for finding off-targets",
         usage="%(prog)s [inputs]",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=version_str,
+        help="Show the version number and exit",
     )
     parser.add_argument(
         "--input_csv",
@@ -168,7 +182,7 @@ def get_off_targets(
         return len(details) > 0
 
 
-def run() -> None:
+def main() -> None:
     """Run the off-targets search from the command line."""
     args = take_input()
     input_csv_file = args.input_csv
@@ -185,4 +199,9 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    deprecation_msg = (
+        f"You cannot run 'python {__file__}' directly, please use the CLI command "
+        f"'{constants.SECONDARY_PROGRAM_NAME_X_CRISPRANALYZER}' instead."
+    )
+    warnings.warn(deprecation_msg, DeprecationWarning)
+    sys.exit(1)
