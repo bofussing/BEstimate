@@ -1,4 +1,3 @@
-from tkinter import SE
 import typing as t
 
 PROGRAM_NAME: t.Literal["BEstimate"] = "BEstimate"
