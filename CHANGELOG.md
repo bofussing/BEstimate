@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Python type hints throughout codebase
+- [README.md](README.md) includes:
+  - clearer quick start instructions
+  - updated CLI usage examples
+  - complete CLI argument reference
+  - instructions for developer to set up development environment, run tests, work with Docker
+  - explanation of how create a release
 - Comprehensive Sphinx-style docstrings for all public classes and functions
 - Initial integration tests for CLI commands and end-to-end testing framework
 - Multi-stage Docker builds with production and development containers
@@ -26,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Main CLI entry point refactored to work with package structure instead of as a script
     - Specifically when it is now possible to run `python3 -m BEstimate ...`
       instead of `cd BEstimate && python3 BEstimate.py ...`
+- Secondary CLI entry points `x_genome` and `x_crispranalyser` added
+  replacing `python3 x_genome.py ...` and `python3 crispr_analyser.py ...`
 - Converted Python package to use `pyproject.toml` in compliance with
   [python.org](https://packaging.python.org/en/latest/specifications/pyproject-toml/)
   recommendations.

@@ -484,6 +484,7 @@ Now, do the following things:
 * `CHANGELOG.md`: Under the heading of the newest release version, describe what was changed, fixed, added.
 * `pyproject.toml`: Increment the project version to the current release version
 * Commit these changes
+* Run `pre-commit run -a` to ensure no formatting issues
 
 Finally
 
