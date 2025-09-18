@@ -2,11 +2,18 @@ import subprocess
 import shlex
 import shutil
 
+import pytest
+
 import BEstimate
 from BEstimate import constants
 
 MODULE_NAME = BEstimate.__name__
-PROGRAM_NAME = constants.PROGRAM_NAME
+PRIMARY_PROGRAM_NAME = constants.PROGRAM_NAME
+ALL_PROGRAM_NAMES = [
+    PRIMARY_PROGRAM_NAME,
+    constants.SECONDARY_PROGRAM_NAME_X_GENOME,
+    constants.SECONDARY_PROGRAM_NAME_X_CRISPRANALYZER,
+]
 
 # HELPERS
 
@@ -48,20 +55,26 @@ def test_python_dash_m__version():
     # Then
     errmsg = get_subprocess_message(subproces_result)
     assert subproces_result.returncode == 0, errmsg
-    assert PROGRAM_NAME in subproces_result.stdout
+    assert PRIMARY_PROGRAM_NAME in subproces_result.stdout
     assert expected_version in subproces_result.stdout
 
 
-def test_cli_on_path():
+@pytest.mark.parametrize(
+    "program_name", [pytest.param(name, id=name) for name in ALL_PROGRAM_NAMES]
+)
+def test_cli_on_path(program_name: str):
     # When
-    result = shutil.which(PROGRAM_NAME)
+    result = shutil.which(program_name)
 
-    assert result is not None, f"{PROGRAM_NAME} is not in PATH, has the name changed?"
+    assert result is not None, f"{program_name} is not in PATH, has the name changed?"
 
 
-def test_cli__version():
+@pytest.mark.parametrize(
+    "program_name", [pytest.param(name, id=name) for name in ALL_PROGRAM_NAMES]
+)
+def test_cli__version(program_name: str):
     # Given
-    cmd = f"{PROGRAM_NAME} --version"
+    cmd = f"{program_name} --version"
     expected_version = BEstimate.__version__
 
     # When
@@ -70,13 +83,16 @@ def test_cli__version():
     # Then
     errmsg = get_subprocess_message(subproces_result)
     assert subproces_result.returncode == 0, errmsg
-    assert PROGRAM_NAME in subproces_result.stdout
+    assert program_name in subproces_result.stdout
     assert expected_version in subproces_result.stdout
 
 
-def test_cli__help():
+@pytest.mark.parametrize(
+    "program_name", [pytest.param(name, id=name) for name in ALL_PROGRAM_NAMES]
+)
+def test_cli__help(program_name: str):
     # Given
-    cmd = f"{PROGRAM_NAME} --help"
+    cmd = f"{program_name} --help"
 
     # When
     subproces_result = subprocess.run(shlex.split(cmd), capture_output=True, text=True)
@@ -84,4 +100,4 @@ def test_cli__help():
     # Then
     errmsg = get_subprocess_message(subproces_result)
     assert subproces_result.returncode == 0, errmsg
-    assert PROGRAM_NAME in subproces_result.stdout
+    assert program_name in subproces_result.stdout

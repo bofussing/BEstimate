@@ -29,6 +29,8 @@ dependencies = [
 # - my_subpackage is the name of the subpackage, e.g. 'scripts' or 'entrypoints'
 # - my_function_name is the name of the function to be run, e.g. 'do_something' and not 'do_something()' (it should take no arguments)
 BEstimate = "BEstimate.BEstimate:main"
+x_genome = "BEstimate.x_genome:main"
+x_crispranalyser = "BEstimate.x_crispranalyser:main"
 
 
 [tool.poetry]

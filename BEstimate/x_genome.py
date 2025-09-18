@@ -9,11 +9,16 @@
 
 import argparse
 import os
-import requests
 import shutil
 import subprocess
 import sys
+import warnings
+
+import requests
+
 from BEstimate.crispr_analyser import index, gather
+from BEstimate import constants
+import BEstimate
 
 CHROMOSOMES = list(range(1, 23)) + ["X", "Y", "MT"]
 
@@ -24,10 +29,18 @@ CHROMOSOMES = list(range(1, 23)) + ["X", "Y", "MT"]
 
 
 def take_input() -> argparse.Namespace:
+    prog_name = constants.SECONDARY_PROGRAM_NAME_X_GENOME
+    version_str = f"{prog_name} {BEstimate.__version__}"
     parser = argparse.ArgumentParser(
-        prog="x_genome.py",
+        prog=prog_name,
         description="Script for indexing CRISPRs for finding off-targets",
         usage="%(prog)s [inputs]",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=version_str,
+        help="Show the version number and exit",
     )
     parser.add_argument(
         "--pamseq",
@@ -304,6 +317,24 @@ def check_crispr_indexes_exist(
 # Execution
 
 
+def main():
+    args = take_input()
+
+    # Off-targets Path (without trailing backslash)
+    ot_path = (
+        args.offtargets_path
+        if args.offtargets_path[-1] != "/"
+        else args.offtargets_path[:-1]
+    )
+
+    run(
+        assembly=args.assembly,
+        ensembl_version=args.ensembl_version,
+        pam_sequence=args.pamseq,
+        ot_path=ot_path,
+    )
+
+
 def run(assembly: str, ensembl_version: str, pam_sequence: str, ot_path: str):
     """Run all CRISPR and gRNA indexing from genome assembly FASTA files"""
     if os.path.exists(ot_path) is False:
@@ -379,20 +410,9 @@ def run(assembly: str, ensembl_version: str, pam_sequence: str, ot_path: str):
 
 
 if __name__ == "__main__":
-    # -------------------------------------------------------------------------#
-    # Retrieve command line arguments
-    args = take_input()
-
-    # Off-targets Path (without trailing backslash)
-    ot_path = (
-        args.offtargets_path
-        if args.offtargets_path[-1] != "/"
-        else args.offtargets_path[:-1]
+    deprecation_msg = (
+        f"You cannot run 'python {__file__}' directly, please use the CLI command "
+        f"'{constants.SECONDARY_PROGRAM_NAME_X_GENOME}' instead."
     )
-
-    run(
-        assembly=args.assembly,
-        ensembl_version=args.ensembl_version,
-        pam_sequence=args.pamseq,
-        ot_path=ot_path,
-    )
+    warnings.warn(deprecation_msg, DeprecationWarning)
+    sys.exit(1)
