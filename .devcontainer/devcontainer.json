@@ -9,6 +9,10 @@
 		"dockerfile": "../Dockerfile-dev"
 	},
 
+	// Configure workspace mount
+	"workspaceMount": "source=${localWorkspaceFolder},target=/opt/repo,type=bind",
+	"workspaceFolder": "/opt/repo",
+
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
