@@ -90,12 +90,21 @@ RUN \
 #   that they are in a virtual environment
 USER $USER_NAME
 WORKDIR $OPT_DIRECTORY
-RUN \
-    python3 -m venv ${VENV_DIRECTORY} &&  \
-    echo "source ${VENV_DIRECTORY}/bin/activate" >> "${USER_BASHRC}"
+RUN python3 -m venv ${VENV_DIRECTORY}
+
+# Make the venv the default environment for both build steps and interactive shells
 ENV \
+    VIRTUAL_ENV=${VENV_DIRECTORY} \
     PATH="${VENV_DIRECTORY}/bin:${PATH}" \
-    VIRTUAL_ENV=${VENV_DIRECTORY}
+    VIRTUAL_ENV_DISABLE_PROMPT=1
+# Ensure interactive shells source activate (not strictly required since PATH is set,
+# but nice for completeness), and install a clean venv-aware prompt.
+RUN \
+    echo "source ${VENV_DIRECTORY}/bin/activate" >> "${USER_BASHRC}" \
+    && cat <<'EOF' >> "${USER_BASHRC}"
+# venv-aware prompt without double parentheses
+PS1='${VIRTUAL_ENV:+($(basename "$VIRTUAL_ENV")) }\u@\h:\w\$ '
+EOF
 # Copy dependency control files and install dependencies
 # 1. only the dependency control files for Poetry (equivalent to "requirements.txt"
 #    if you have never seen Poetry *.lock and *.toml files before)
