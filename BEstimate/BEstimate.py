@@ -10,6 +10,7 @@
 # Import necessary packages
 import typing as t
 import os, sys, pandas, re, argparse, requests, json, itertools, pickle, time, numpy, gzip
+import warnings
 from Bio import SeqIO
 from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
@@ -4964,3 +4965,12 @@ Off target analysis: %s"""
     \n"""
     )
     return
+
+
+if __name__ == "__main__":
+    deprecation_msg = (
+        f"You cannot run 'python {__file__}' directly, please use the CLI command "
+        f"'{constants.PROGRAM_NAME}' instead."
+    )
+    warnings.warn(deprecation_msg, DeprecationWarning)
+    sys.exit(1)
