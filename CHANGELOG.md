@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Data files like `H_sapiens_interfaces.txt` are included within the package structure and referenced via
       `importlib.resources` to ensure compatibility.
     - Refactored path handling to use `OUTPUT_PATH` global consistently
+- Updated base Python Docker image used to build the public and development Docker images
 
 ### Fixed
 - Corrected import paths for `crispr_analyser`, `x_genome`, and
