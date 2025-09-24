@@ -1,0 +1,174 @@
+stages:
+  - build
+  - test
+  - publish
+
+include:
+# DOCS: https://gitlab.internal.sanger.ac.uk/DERMATLAS/common/cicd-template/-/blob/develop/README.md
+  - project: 'team113sanger/common/cicd-template'
+    ref: 0.4.1
+    file: '.gitlab-ci-components.yml'
+
+
+#############
+# TEMPLATES #
+#############
+
+.specific-variables:
+  variables:
+    # We need to set this to 1 to enable BuildKit as the Dockerfile uses BuildKit features to speed up the build
+    USE_DOCKER_TARGET_STAGE: 1
+    # Docker related variables
+    DOCKER_BUILDKIT: 1
+    PRE_FETCH_BASE_IMAGE: python:3.12-slim-trixie
+    # Mask variables in job logs (for file-type vars)
+    USE_MASK: 1
+
+.template-public-wo-script-or-rules:
+  extends:
+    - .component-variables
+    - .specific-variables
+    - .component-before_script
+    - .component-after_script
+    - .component-tags-shared-runner
+  variables:
+    DOCKERFILE_PATH: Dockerfile
+    DOCKER_TARGET_STAGE: final_stage
+    IMAGE_TAG_SUFFIX: "-public"
+
+.template-dev-wo-script-or-rules:
+  extends:
+    - .component-variables
+    - .specific-variables
+    - .component-before_script
+    - .component-after_script
+    - .component-tags-shared-runner
+  variables:
+    IMAGE_TAG_SUFFIX: "-dev"
+    DOCKER_TARGET_STAGE: base_stage
+    DOCKERFILE_PATH: Dockerfile-dev
+
+
+# .component-rules-all:
+#   rules:
+#     - if: >2-
+#         $CI_COMMIT_BRANCH =~ /^feature/ ||
+#         $CI_COMMIT_BRANCH =~ /^main/ ||
+#         $CI_COMMIT_BRANCH =~ /^master/ ||
+#         $CI_COMMIT_BRANCH =~ /^develop/ ||
+#         $CI_COMMIT_BRANCH =~ /^hotfix/ ||
+#         $CI_COMMIT_BRANCH =~ /^release/ ||
+#         $CI_COMMIT_TAG
+
+# .component-rules-except-release:
+#   rules:
+#     - if: >2-
+#         $CI_COMMIT_BRANCH =~ /^feature/ ||
+#         $CI_COMMIT_BRANCH =~ /^main/ ||
+#         $CI_COMMIT_BRANCH =~ /^master/ ||
+#         $CI_COMMIT_BRANCH =~ /^develop/ ||
+#         $CI_COMMIT_BRANCH =~ /^hotfix/ ||
+#         $CI_COMMIT_TAG
+
+# .component-rules-develop-only:
+#   rules:
+#     - if: $CI_COMMIT_BRANCH =~ /^develop/
+
+# .component-rules-tag-only:
+#   rules:
+#     - if: $CI_COMMIT_TAG
+
+
+############
+#   JOBS   #
+############
+
+build-dev:
+  stage: build
+  extends:
+    - .template-dev-wo-script-or-rules
+    - .component-rules-except-release
+    - .component-script_docker-build
+
+build-public:
+  stage: build
+  extends:
+    - .template-public-wo-script-or-rules
+    - .component-rules-except-release
+    - .component-script_docker-build
+
+unit-test-dev:
+  stage: test
+  extends:
+    - .template-dev-wo-script-or-rules
+    - .component-rules-except-release
+    - .component-script-test-unit-python
+
+unit-test-public:
+  stage: test
+  extends:
+    - .template-public-wo-script-or-rules
+    - .component-rules-except-release
+  script:
+    - echo "*** [SCRIPT] START ***"
+    - echo "I am a script - I run the Python unit tests in a docker container"
+    - echo "Unit test against CANDIDATE_IMAGE='${CANDIDATE_IMAGE:?not-set-in-before_script}'"
+    - docker pull "${CANDIDATE_IMAGE}"
+    - docker run --rm "${CANDIDATE_IMAGE}" python3 -m BEstimate --version
+    - docker run --rm "${CANDIDATE_IMAGE}" python3 -m BEstimate --help
+    - docker run --rm "${CANDIDATE_IMAGE}" BEstimate --version
+    - docker run --rm "${CANDIDATE_IMAGE}" x_genome --version
+    - docker run --rm "${CANDIDATE_IMAGE}" x_crispranalyser --version
+    - docker run --rm -v ./tests:/opt/tests "${CANDIDATE_IMAGE}" /bin/bash -c 'pip install --user pytest && python -m pytest /opt/tests'
+    - echo "*** [SCRIPT] END ***"
+
+
+format-test:
+  stage: test
+  extends:
+    - .template-dev-wo-script-or-rules
+    - .component-rules-except-release
+    - .component-script-test-formatting-in-docker
+
+e2e-test-public:
+  stage: test
+  extends:
+    - .template-public-wo-script-or-rules
+    - .component-rules-except-release
+    - .component-script-test-unit-python
+  script:
+    - echo "No e2e tests yet"
+
+publish-develop:
+  stage: publish
+  extends:
+    - .template-dev-wo-script-or-rules
+    - .component-script-publish-develop-docker-image
+    - .component-rules-develop-only
+
+
+publish-tagged_and_latest_docker_images:
+  stage: publish
+  extends:
+    - .template-dev-wo-script-or-rules
+    - .component-script-publish-tagged+latest-docker-image
+    - .component-rules-tag-only
+
+# TODO - when the public Docker image needs to be pushed to Quay.io, uncomment
+#        this job
+# TODO - If Quay.io is not needed, but GCHR.io or Dockerhub a different job will
+#        be needed
+# publish-tagged_and_latest_docker_images-public:
+#   stage: publish
+#   extends:
+#     - .template-public-wo-script-or-rules
+#     - .component-script-publish-quayio-tagged+latest-docker-image
+#     - .component-rules-tag-only
+
+
+publish-tagged_python_package:
+  stage: publish
+  extends:
+    - .template-dev-wo-script-or-rules
+    - .component-rules-tag-only
+    - .component-script-publish-tagged-python-package

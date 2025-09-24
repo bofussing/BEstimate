@@ -38,7 +38,13 @@ def match_pam(
     return True
 
 
-def gather(inputfile: str, outputfile: str, pam: str, sequence_start: int = 0, verbose: bool = False) -> int:
+def gather(
+    inputfile: str,
+    outputfile: str,
+    pam: str,
+    sequence_start: int = 0,
+    verbose: bool = False,
+) -> int:
     """Run the CRISPR gatherer.
 
     Args:
@@ -62,9 +68,7 @@ def gather(inputfile: str, outputfile: str, pam: str, sequence_start: int = 0, v
                 if len(line) == 0:
                     continue
                 if line[0] == ">":
-                    chromosome = re.search(
-                        r">(.*?) dna:chromosome", line
-                    ).group(1)
+                    chromosome = re.search(r">(.*?) dna:chromosome", line).group(1)
                     if verbose:
                         print(f"Processing chromosome {chromosome}...")
                     position = 0
@@ -84,7 +88,13 @@ def gather(inputfile: str, outputfile: str, pam: str, sequence_start: int = 0, v
                         ):
                             sequence_start += 1
                             csvwriter.writerow(
-                                [sequence_start, chromosome, position, "".join(buffer), 0]
+                                [
+                                    sequence_start,
+                                    chromosome,
+                                    position,
+                                    "".join(buffer),
+                                    0,
+                                ]
                             )
                             crispr_count += 1
                         if match_pam(
@@ -94,7 +104,13 @@ def gather(inputfile: str, outputfile: str, pam: str, sequence_start: int = 0, v
                         ):
                             sequence_start += 1
                             csvwriter.writerow(
-                                [sequence_start, chromosome, position, "".join(buffer), 1]
+                                [
+                                    sequence_start,
+                                    chromosome,
+                                    position,
+                                    "".join(buffer),
+                                    1,
+                                ]
                             )
                             crispr_count += 1
     if verbose:

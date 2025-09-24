@@ -8,11 +8,17 @@
 
 import argparse
 import csv
-import numpy as np
 import os.path
 import sqlite3
 import time
-from crispr_analyser import search, align, utils
+import sys
+import warnings
+
+import numpy as np
+
+from BEstimate.crispr_analyser import search, align, utils
+from BEstimate import constants
+import BEstimate
 
 # Calculate off-targets
 
@@ -20,11 +26,19 @@ from crispr_analyser import search, align, utils
 # capture command line arguments
 
 
-def take_input():
+def take_input() -> argparse.Namespace:
+    program_name = constants.SECONDARY_PROGRAM_NAME_X_CRISPRANALYZER
+    version_str = f"{program_name} {BEstimate.__version__}"
     parser = argparse.ArgumentParser(
-        prog="x_crispranalyser.py",
+        prog=program_name,
         description="Script for finding off-targets",
         usage="%(prog)s [inputs]",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=version_str,
+        help="Show the version number and exit",
     )
     parser.add_argument(
         "--input_csv",
@@ -62,9 +76,7 @@ def format_summary(summary: list[int]) -> str:
     )
 
 
-def fetch_crispr_cursor(
-    crispr_ids: list[int], cur: sqlite3.Cursor
-) -> sqlite3.Cursor:
+def fetch_crispr_cursor(crispr_ids: list[int], cur: sqlite3.Cursor) -> sqlite3.Cursor:
     """Get the CRISPR data for a given guide sequence and return cursor"""
     sql = (
         "SELECT seq, chr_name, chr_start, pam_right FROM crisprs "
@@ -87,9 +99,7 @@ def get_ots_for_row(
     crispr_ids = search.search(guides, sequence, True)
     # find the off-target summary for the CRISPR
     binary_sequence = utils.sequence_to_binary_encoding(sequence, 1)
-    binary_reverse_sequence = align.reverse_complement_binary(
-        binary_sequence, 20
-    )
+    binary_reverse_sequence = align.reverse_complement_binary(binary_sequence, 20)
     summary, _ = align.find_off_targets(
         guides, binary_sequence, binary_reverse_sequence
     )
@@ -120,9 +130,7 @@ def get_off_targets(
     """Generate off-target summaries and details files for a given input
     and binary guides file"""
     if not os.path.isfile(binary_index_file):
-        raise FileNotFoundError(
-            f"binary index file {binary_index_file} is not found"
-        )
+        raise FileNotFoundError(f"binary index file {binary_index_file} is not found")
     if not os.path.isfile(input_csv_file):
         raise FileNotFoundError(f"input CSV file {input_csv_file} is not found")
     if not os.path.isfile(db_file):
@@ -174,7 +182,7 @@ def get_off_targets(
         return len(details) > 0
 
 
-def run() -> None:
+def main() -> None:
     """Run the off-targets search from the command line."""
     args = take_input()
     input_csv_file = args.input_csv
@@ -191,4 +199,9 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    deprecation_msg = (
+        f"You cannot run 'python {__file__}' directly, please use the CLI command "
+        f"'{constants.SECONDARY_PROGRAM_NAME_X_CRISPRANALYZER}' instead."
+    )
+    warnings.warn(deprecation_msg, DeprecationWarning)
+    sys.exit(1)

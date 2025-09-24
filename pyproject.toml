@@ -1,0 +1,55 @@
+[project]
+name = "BEstimate"
+version = "1.1.1"
+description = "Estimate and Analyse Base Editor Target Site - BEstimate"
+authors = [
+    {name = "Cansu Dincer", email = "cd@sanger.ac.uk"},
+    {name = "Bo Fussing", email = "bf15@sanger.ac.uk"}
+]
+maintainers = [
+    {name = "Bo Fussing", email = "bf15@sanger.ac.uk"},
+    {name = "Jose Dianes Santos", email = "jd31@sanger.ac.uk"},
+    {name = "Ian Vermes", email = "iv3@sanger.ac.uk"},
+]
+
+license-files = ["LICENSE"]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas (>=2.2.3,<3.0.0)",
+    "requests (>=2.32,<3.0)",
+    "numpy (>=2.2.5,<3.0.0)",
+    "biopython (>=1.85,<2.0)",
+    "numba (>=0.61,<0.62)"
+]
+
+[project.scripts]
+# Scripts are defined here, and are added by Python to the PATH when the package
+# is installed. In a virtual environment, these scripts are added to the venv/bin/ directory.
+#
+# The syntax is as follows:
+# my_program = "BEstimate.my_subpackage:my_function_name"
+# Where:
+# - my_program is the name of the command to be run
+# - my_subpackage is the name of the subpackage, e.g. 'scripts' or 'entrypoints'
+# - my_function_name is the name of the function to be run, e.g. 'do_something' and not 'do_something()' (it should take no arguments)
+BEstimate = "BEstimate.BEstimate:main"
+x_genome = "BEstimate.x_genome:main"
+x_crispranalyser = "BEstimate.x_crispranalyser:main"
+
+
+[tool.poetry]
+packages = [
+    { include = "BEstimate" }
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=8.4.2,<9.0.0)",
+    "pre-commit (>=4.3.0,<5.0.0)",
+    "black (==25.1.0)"
+]
