@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-09-24
 ### Added
 - Python type hints throughout codebase
 - [README.md](README.md) includes:
@@ -49,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Data files like `H_sapiens_interfaces.txt` are included within the package structure and referenced via
       `importlib.resources` to ensure compatibility.
     - Refactored path handling to use `OUTPUT_PATH` global consistently
-- Updated base Python Docker image used to build the public and development Docker images
+- Updated base Python Docker image used to build the public and development Docker images - python:3.12-slim bullseye to trixie
 
 ### Fixed
 - Corrected import paths for `crispr_analyser`, `x_genome`, and
