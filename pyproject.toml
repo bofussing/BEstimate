@@ -1,6 +1,6 @@
 [project]
 name = "BEstimate"
-version = "1.1.1"
+version = "1.1.2"
 description = "Estimate and Analyse Base Editor Target Site - BEstimate"
 authors = [
     {name = "Cansu Dincer", email = "cd@sanger.ac.uk"},
