@@ -1,13 +1,13 @@
 import subprocess
 import filecmp
-import shutil
+import os
 
 
 # tests that off-target files are correctly generated
-def test_output(tmp_path):
+def test_output(tmp_path, request):
     d = tmp_path / "test"
     d.mkdir()
-    shutil.copytree("data/offtargets", d / "offtargets")
+    test_dir = os.path.dirname(request.path)
     subprocess.run(
         [
             "BEstimate",
@@ -22,10 +22,8 @@ def test_output(tmp_path):
             "-edit_to",
             "G",
             "-ot",
-            "-o",
-            "/tmp/output",
             "-ot_path",
-            "offtargets",
+            f"{test_dir}/data/offtargets/",
             "-ofile",
             "SRY_TEST",
         ],
@@ -35,5 +33,5 @@ def test_output(tmp_path):
     for file in ["crispr_df", "ot_annotated_df", "edit_df", "wge_return"]:
         assert filecmp.cmp(
             d / f"SRY_TEST/SRY_TEST_{file}.csv",
-            d / f"offtargets/output/SRY_TEST_{file}.csv",
+            d / f"{test_dir}/data/offtargets/output/SRY_TEST_{file}.csv",
         )
