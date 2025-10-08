@@ -1,0 +1,1 @@
+Hugo_Symbol,CRISPR_PAM_Sequence,gRNA_Target_Sequence,Location,Edit_Location,Direction,Strand,Gene_ID,Transcript_ID,Exon_ID,guide_in_CDS,gRNA_flanking_sequences,Edit_in_Exon,Edit_in_CDS,GC%,# Edits/guide,Poly_T,mutation_on_guide,guide_change_mutation,mutation_on_window,mutation_on_PAM,CRISPR_sequence,Chromosome,Start,Strand,Off_target_summary

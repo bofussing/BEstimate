@@ -4949,7 +4949,7 @@ Off target analysis: %s"""
             )
         elif CLI_ARGS["ASSEMBLY"] == "GRCh38":
             file_main_text = "Homo_sapiens.GRCh38.%s" % CLI_ARGS["PAMSEQ"]
-        if "%s.bin" % file_main_text in os.listdir("%sgrna_bin/" % OT_PATH):
+        if "%s.bin" % file_main_text in os.listdir(f"{OT_PATH}grna_bin/"):
             _ = run_offtargets(
                 genome=file_main_text,
                 file_name=CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH],
