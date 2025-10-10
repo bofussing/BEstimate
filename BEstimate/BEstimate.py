@@ -9,7 +9,7 @@
 
 
 import typing as t
-import os, sys, pandas, re, argparse, requests, json
+import os, sys, pandas, argparse, requests, json
 import warnings
 from Bio.pairwise2 import format_alignment
 
@@ -19,7 +19,9 @@ from BEstimate import x_crispranalyser
 import BEstimate
 
 from BEstimate.services.uniprot import Uniprot
-from BEstimate.services.ensembl import Ensembl, Variant
+from BEstimate.services.ensembl import Ensembl
+
+import BEstimate.sequences.utils as seq_utils
 
 # GLOBAL VARIABLES
 OT_PATH: str = ""
@@ -434,7 +436,7 @@ Off target analysis: %s"""
     if CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_crispr_df.csv" not in os.listdir(
         OUTPUT_PATH
     ):
-        crispr_df = extract_grna_sites(
+        crispr_df = seq_utils.extract_grna_sites(
             hugo_symbol=CLI_ARGS["GENE"],
             searched_nucleotide=CLI_ARGS["EDIT"],
             pam_window=[
@@ -483,7 +485,7 @@ Off target analysis: %s"""
     if CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH] + "_edit_df.csv" not in os.listdir(
         OUTPUT_PATH
     ):
-        edit_df = find_editable_nucleotide(
+        edit_df = seq_utils.find_editable_nucleotide(
             crispr_df=crispr_df,
             searched_nucleotide=CLI_ARGS["EDIT"],
             activity_window=[
@@ -536,7 +538,7 @@ Off target analysis: %s"""
             if CLI_ARGS[
                 constants.ARGS_KEY_OUTPUT_PATH
             ] + "_hgvs_df.csv" not in os.listdir(OUTPUT_PATH):
-                hgvs_df = extract_hgvs_df(
+                hgvs_df = seq_utils.extract_hgvs_df(
                     edit_df=edit_df,
                     ensembl_object=ensembl_obj,
                     transcript_id=CLI_ARGS["TRANSCRIPT"],
@@ -564,7 +566,7 @@ Off target analysis: %s"""
                 print("HGVS nomenclatures were collected.\n")
 
             if hgvs_df is not None and len(hgvs_df.index) != 0:
-                whole_vep_df = retrieve_vep_info(
+                whole_vep_df = seq_utils.retrieve_vep_info(
                     hgvs_df=hgvs_df,
                     ensembl_object=ensembl_obj,
                     uniprot=CLI_ARGS["UNIPROT"],
@@ -611,14 +613,14 @@ Off target analysis: %s"""
         ] + "_protein_df.csv" not in os.listdir(OUTPUT_PATH):
             print("Adding Uniprot ID, corresponding Domain and PTM information..")
             if len(whole_vep_df.index) != 0:
-                uniprot_df = annotate_edits(
+                uniprot_df = seq_utils.annotate_edits(
                     ensembl_object=ensembl_obj,
                     vep_df=whole_vep_df,
                     uniprot_id=CLI_ARGS["UNIPROT"],
                 )
                 if uniprot_df is not None and len(uniprot_df.index) != 0:
                     print("Adding affected interface and interacting partners..")
-                    protein_df = annotate_interface(
+                    protein_df = seq_utils.annotate_interface(
                         annotated_edit_df=uniprot_df,
                         uniprot_id=CLI_ARGS["UNIPROT"],
                         yulab_df=yulab_df,
@@ -667,7 +669,7 @@ Off target analysis: %s"""
                 constants.ARGS_KEY_OUTPUT_PATH
             ] + "_summary_df.csv" not in os.listdir(OUTPUT_PATH):
                 print("Summarising information..")
-                summary_df = summarise_guides(last_df=protein_df)
+                summary_df = seq_utils.summarise_guides(last_df=protein_df)
 
                 if summary_df is not None and len(summary_df.index) != 0:
                     print("Summary Data Frame was created!")

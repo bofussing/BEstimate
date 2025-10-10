@@ -1,3 +1,10 @@
+# Copyright (C) 2025 Genome Research Ltd.
+
+import pandas as pd
+import typing as t
+import re
+from BEstimate.services.ensembl import Ensembl, Variant
+
 def find_pam_protospacer(
     sequence: str,
     pam_sequence: str,
@@ -135,7 +142,7 @@ def extract_grna_sites(
     flan_3: str,
     flan_5: str,
     ensembl_object: Ensembl,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Extract gRNA target sites containing editable nucleotides for base editing.
 
@@ -196,7 +203,7 @@ def extract_grna_sites(
 
     print("\nCRISPR df is filling...")
 
-    crisprs_df = pandas.DataFrame(
+    crisprs_df = pd.DataFrame(
         columns=[
             "Hugo_Symbol",
             "CRISPR_PAM_Sequence",
@@ -227,7 +234,7 @@ def extract_grna_sites(
                 for transcript, exon_list in transcript_exon.items():
                     if exon_list:
                         for exon in exon_list:
-                            df = pandas.DataFrame(
+                            df = pd.DataFrame(
                                 [
                                     [
                                         crispr_seq,
@@ -249,9 +256,9 @@ def extract_grna_sites(
                                     "Exon_ID",
                                 ],
                             )
-                            crisprs_df = pandas.concat([crisprs_df, df])
+                            crisprs_df = pd.concat([crisprs_df, df])
                     else:
-                        df = pandas.DataFrame(
+                        df = pd.DataFrame(
                             [
                                 [
                                     crispr_seq,
@@ -273,9 +280,9 @@ def extract_grna_sites(
                                 "Exon_ID",
                             ],
                         )
-                        crisprs_df = pandas.concat([crisprs_df, df])
+                        crisprs_df = pd.concat([crisprs_df, df])
             else:
-                df = pandas.DataFrame(
+                df = pd.DataFrame(
                     [
                         [
                             crispr_seq,
@@ -297,7 +304,7 @@ def extract_grna_sites(
                         "Exon_ID",
                     ],
                 )
-                crisprs_df = pandas.concat([crisprs_df, df])
+                crisprs_df = pd.concat([crisprs_df, df])
 
     crisprs_df["Hugo_Symbol"] = hugo_symbol
     crisprs_df["guide_in_CDS"] = crisprs_df.apply(
@@ -408,13 +415,13 @@ def check_genome_for_mutation(genomic_range, direction, mutations, window_type, 
 
 
 def find_editable_nucleotide(
-    crispr_df: pandas.DataFrame,
+    crispr_df: pd.DataFrame,
     searched_nucleotide: str,
     activity_window: list,
     pam_window: list,
     ensembl_object: Ensembl,
     mutations: list | None,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Find editable nucleotides within gRNA activity windows and map to genomic coordinates.
 
@@ -447,7 +454,7 @@ def find_editable_nucleotide(
     pam_window = [pam_window[0] - 1, pam_window[1]]
 
     print("Edit Data Frame is filling...")
-    edit_df = pandas.DataFrame(
+    edit_df = pd.DataFrame(
         columns=[
             "Hugo_Symbol",
             "CRISPR_PAM_Sequence",
@@ -526,7 +533,7 @@ def find_editable_nucleotide(
                     row["Transcript_ID"], actual_ind, actual_ind + 1
                 )
 
-                df = pandas.DataFrame(
+                df = pd.DataFrame(
                     [
                         [
                             row["Hugo_Symbol"],
@@ -562,11 +569,11 @@ def find_editable_nucleotide(
                         "Edit_in_CDS",
                     ],
                 )
-                edit_df = pandas.concat([edit_df, df])
+                edit_df = pd.concat([edit_df, df])
 
         else:
             # If not --> no edit
-            df = pandas.DataFrame(
+            df = pd.DataFrame(
                 [
                     [
                         row["Hugo_Symbol"],
@@ -602,7 +609,7 @@ def find_editable_nucleotide(
                     "Edit_in_CDS",
                 ],
             )
-            edit_df = pandas.concat([edit_df, df])
+            edit_df = pd.concat([edit_df, df])
 
     edit_df["# Edits/guide"] = 0
     for guide, g_df in edit_df.groupby("gRNA_Target_Sequence"):
@@ -675,14 +682,14 @@ def find_editable_nucleotide(
 
 
 def extract_hgvs_df(
-    edit_df: pandas.DataFrame,
+    edit_df: pd.DataFrame,
     ensembl_object: Ensembl,
     transcript_id: str,
     edited_nucleotide: str,
     new_nucleotide: str,
     activity_window: list,
     mutations: list | None,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Generate HGVS nomenclature for base editing variants.
 
@@ -1182,16 +1189,16 @@ def extract_hgvs_df(
                     }
                     row_dicts.append(d)
 
-    hgvs_df = pandas.DataFrame(row_dicts)
+    hgvs_df = pd.DataFrame(row_dicts)
     return hgvs_df
 
 
 def retrieve_vep_info(
-    hgvs_df: pandas.DataFrame,
+    hgvs_df: pd.DataFrame,
     ensembl_object: Ensembl,
     uniprot: str | None,
     transcript_id: str | None = None,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """
     Retrieve variant effect predictions using Ensembl VEP API.
 
@@ -1285,7 +1292,7 @@ def retrieve_vep_info(
         "transcript_id": transcript_id,
     }
 
-    hgvs_index = pandas.DataFrame(
+    hgvs_index = pd.DataFrame(
         columns=["HGVS"], index=list(range(len(list(hgvs_df["HGVS"].unique()))))
     )
     count = 0
@@ -1429,8 +1436,8 @@ def retrieve_vep_info(
 
 
 def annotate_edits(
-    ensembl_object: Ensembl, vep_df: pandas.DataFrame, uniprot_id: str | None
-) -> pandas.DataFrame:
+    ensembl_object: Ensembl, vep_df: pd.DataFrame, uniprot_id: str | None
+) -> pd.DataFrame:
     """
     Annotate base edits with UniProt protein domain and PTM information.
 
@@ -1459,13 +1466,13 @@ def annotate_edits(
         uniprot = uniprot_id
     else:
         uniprot_list = [
-            x for x in list(vep_df["swissprot_vep"].unique()) if not pandas.isna(x)
+            x for x in list(vep_df["swissprot_vep"].unique()) if not pd.isna(x)
         ]
         if len(uniprot_list) == 1:
             uniprot = uniprot_list[0]
 
     ensembl_p = [
-        x for x in list(vep_df["Protein_ID"].unique()) if pandas.isna(x) is not True
+        x for x in list(vep_df["Protein_ID"].unique()) if pd.isna(x) is not True
     ][0]
     seq_mapping = ensembl_object.extract_uniprot_info(
         ensembl_pid=ensembl_p, uniprot=uniprot
@@ -1487,7 +1494,7 @@ def annotate_edits(
                 ptm, domain, c_domain = None, None, None
                 if (
                     row["Protein_Position_ensembl"] is not None
-                    and pandas.isna(row["Protein_Position_ensembl"]) is False
+                    and pd.isna(row["Protein_Position_ensembl"]) is False
                 ):
 
                     # First check if ensembl and uniprot sequences have same indices
@@ -1516,7 +1523,7 @@ def annotate_edits(
                         ).split(";"):
                             if (
                                 position is not None
-                                and pandas.isna(position) is False
+                                and pd.isna(position) is False
                                 and position != "None"
                                 and position != ""
                                 and type(position) != float
@@ -1623,7 +1630,7 @@ def extract_pis(pis: str) -> list[int] | None:
 
 
 def collect_pis(
-    uniprot: str, yulab_df: pandas.DataFrame
+    uniprot: str, yulab_df: pd.DataFrame
 ) -> dict[int, list[dict[str, str]]]:
     """
     Collecting protein interaction position for a given uniprot id
@@ -1669,7 +1676,7 @@ def collect_pis(
 
 
 def disrupt_interface(
-    uniprot: str, pos: int, yulab_df: pandas.DataFrame
+    uniprot: str, pos: int, yulab_df: pd.DataFrame
 ) -> tuple[str | None, str | None, str | None]:
     """
     Checking if the given position disrupts the interfaces in the given uniprot
@@ -1714,10 +1721,10 @@ def disrupt_interface(
 
 
 def annotate_interface(
-    annotated_edit_df: pandas.DataFrame,
+    annotated_edit_df: pd.DataFrame,
     uniprot_id: t.Optional[str],
-    yulab_df: pandas.DataFrame,
-) -> pandas.DataFrame:
+    yulab_df: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Add Interactome Insider protein interface information for edgetic perturbation.
 
@@ -1747,7 +1754,7 @@ def annotate_interface(
         if (
             group[1] is not None
             and group[1] != "None"
-            and pandas.isna(group[1]) == False
+            and pd.isna(group[1]) == False
             and group[1] != ""
         ):
             if group[0] in list(yulab_df.P1) or group[0] in list(yulab_df.P2):
@@ -1941,7 +1948,7 @@ def select_severe_effects(mutation_consequence):
     """
     if (
         mutation_consequence is None
-        or pandas.isna(mutation_consequence)
+        or pd.isna(mutation_consequence)
         or mutation_consequence == ""
     ):
         return ""
@@ -1970,7 +1977,7 @@ def summarise_3di(list_of_partners):
         for partner_list in list_of_partners:
             if (
                 partner_list is not None
-                and pandas.isna(partner_list) == False
+                and pd.isna(partner_list) == False
                 and partner_list != []
             ):
                 for partner in partner_list.split(";"):
@@ -1982,7 +1989,7 @@ def summarise_3di(list_of_partners):
         return None
 
 
-def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
+def summarise_guides(last_df: pd.DataFrame) -> pd.DataFrame:
     """
     Create summary report of gRNA guides with aggregated annotations.
 
@@ -1999,7 +2006,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
         all associated annotations, consequence predictions, and functional
         effects into a comprehensive summary for each guide.
     """
-    summary_df = pandas.DataFrame(
+    summary_df = pd.DataFrame(
         index=list(range(0, len(last_df.groupby(["CRISPR_PAM_Sequence"])))),
         columns=[
             "Hugo_Symbol",
@@ -2077,7 +2084,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.Hugo_Symbol.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2085,7 +2092,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.CRISPR_PAM_Sequence.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.CRISPR_PAM_Sequence.unique() is not None
             else ""
@@ -2095,7 +2102,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.CRISPR_PAM_Location.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.CRISPR_PAM_Location.unique() is not None
             else ""
@@ -2105,7 +2112,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.gRNA_Target_Sequence.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.gRNA_Target_Sequence.unique() is not None
             else ""
@@ -2115,9 +2122,9 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.gRNA_flanking_sequences.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
-            if pandas.isna(guide_df.gRNA_flanking_sequences.unique()) is False
+            if pd.isna(guide_df.gRNA_flanking_sequences.unique()) is False
             else ""
         )
 
@@ -2125,7 +2132,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.gRNA_Target_Location.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.gRNA_Target_Location.unique() is not None
             else ""
@@ -2135,7 +2142,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.Edit_Location.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.Edit_Location.unique() is not None
             else ""
@@ -2145,7 +2152,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.Direction.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.Direction.unique() is not None
             else ""
@@ -2155,7 +2162,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.Transcript_ID.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.Transcript_ID.unique() is not None
             else ""
@@ -2165,7 +2172,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.Exon_ID.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.Exon_ID.unique() is not None
             else ""
@@ -2175,58 +2182,58 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.Protein_ID.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
             if guide_df.Protein_ID.unique() is not None
             else ""
         )
 
         if (
-            guide_df[~pandas.isna(guide_df.Regulatory_ID)].Regulatory_ID.unique()
+            guide_df[~pd.isna(guide_df.Regulatory_ID)].Regulatory_ID.unique()
             is not None
             and type(guide_df.Regulatory_ID) != float
             and list(
-                guide_df[~pandas.isna(guide_df.Regulatory_ID)].Regulatory_ID.unique()
+                guide_df[~pd.isna(guide_df.Regulatory_ID)].Regulatory_ID.unique()
             )
         ):
             summary_df.loc[i, "Regulatory_ID"] = ";".join(
                 [
                     x
                     for x in list(guide_df.Regulatory_ID.unique())
-                    if x is not None and pandas.isna(x) is False
+                    if x is not None and pd.isna(x) is False
                 ]
             )
         else:
             summary_df.loc[i, "Regulatory_ID"] = None
 
         if (
-            guide_df[~pandas.isna(guide_df.Motif_ID)].Motif_ID.unique() is not None
+            guide_df[~pd.isna(guide_df.Motif_ID)].Motif_ID.unique() is not None
             and type(guide_df.Motif_ID) != float
-            and list(guide_df[~pandas.isna(guide_df.Motif_ID)].Motif_ID.unique())
+            and list(guide_df[~pd.isna(guide_df.Motif_ID)].Motif_ID.unique())
         ):
             summary_df.loc[i, "Motif_ID"] = ";".join(
                 [
                     x
                     for x in list(guide_df.Motif_ID.unique())
-                    if x is not None and pandas.isna(x) is False
+                    if x is not None and pd.isna(x) is False
                 ]
             )
         else:
             summary_df.loc[i, "Motif_ID"] = None
 
         if (
-            guide_df[~pandas.isna(guide_df.TFs_on_motif)].TFs_on_motif.unique()
+            guide_df[~pd.isna(guide_df.TFs_on_motif)].TFs_on_motif.unique()
             is not None
             and type(guide_df.TFs_on_motif) != float
             and list(
-                guide_df[~pandas.isna(guide_df.TFs_on_motif)].TFs_on_motif.unique()
+                guide_df[~pd.isna(guide_df.TFs_on_motif)].TFs_on_motif.unique()
             )
         ):
             summary_df.loc[i, "TFs_on_motif"] = ";".join(
                 [
                     x
                     for x in list(guide_df.TFs_on_motif.unique())
-                    if x is not None and pandas.isna(x) is False
+                    if x is not None and pd.isna(x) is False
                 ]
             )
         else:
@@ -2265,7 +2272,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.allele.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2273,7 +2280,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.cDNA_Change.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2281,7 +2288,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.CDS_Position.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2289,7 +2296,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.Protein_Position.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2297,14 +2304,14 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 str(x)
                 for x in list(guide_df.Protein_Position_ensembl.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
         summary_df.loc[i, "Protein_Change"] = ";".join(
             [
                 x
                 for x in list(guide_df.Protein_Change.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2312,7 +2319,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.Edited_AA.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2320,7 +2327,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.New_AA.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2328,7 +2335,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.Edited_AA_Prop.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2336,7 +2343,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.New_AA_Prop.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2344,20 +2351,20 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.swissprot_vep.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
         if (
             guide_df.uniprot_provided.unique() is not None
-            and pandas.isna(guide_df.uniprot_provided) is False
+            and pd.isna(guide_df.uniprot_provided) is False
             and list(guide_df.uniprot_provided.unique())
         ):
             summary_df.loc[i, "uniprot_provided"] = ";".join(
                 [
                     x
                     for x in list(guide_df.uniprot_provided.unique())
-                    if x is not None and pandas.isna(x) is False
+                    if x is not None and pd.isna(x) is False
                 ]
             )
         else:
@@ -2367,7 +2374,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.variant_classification.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2375,7 +2382,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.variant_biotype.unique())
-                if x is not None and pandas.isna(x) is False
+                if x is not None and pd.isna(x) is False
             ]
         )
 
@@ -2389,7 +2396,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
                         for c in [
                             x
                             for x in list(guide_df.consequence_terms.unique())
-                            if x is not None and pandas.isna(x) == False
+                            if x is not None and pd.isna(x) == False
                         ]
                     ]
                 ]
@@ -2401,7 +2408,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
                 [
                     rename_mutational_consequences(x)
                     for x in guide_df.most_severe_consequence.unique()
-                    if x is not None and pandas.isna(x) == False
+                    if x is not None and pd.isna(x) == False
                 ]
             )
         )
@@ -2418,13 +2425,13 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
 
         if (
             guide_df[
-                ~pandas.isna(guide_df.polyphen_prediction)
+                ~pd.isna(guide_df.polyphen_prediction)
             ].polyphen_prediction.unique()
             is not None
             and type(guide_df.polyphen_prediction) != float
             and list(
                 guide_df[
-                    ~pandas.isna(guide_df.polyphen_prediction)
+                    ~pd.isna(guide_df.polyphen_prediction)
                 ].polyphen_prediction.unique()
             )
         ):
@@ -2432,7 +2439,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
                 [
                     str(x)
                     for x in list(guide_df.polyphen_prediction.unique())
-                    if x is not None and pandas.isna(x) is False
+                    if x is not None and pd.isna(x) is False
                 ]
             )
         else:
@@ -2442,7 +2449,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.sift_prediction.unique())
-                if x is not None and pandas.isna(x) == False and type(x) != float
+                if x is not None and pd.isna(x) == False and type(x) != float
             ]
         )
 
@@ -2450,7 +2457,7 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             [
                 x
                 for x in list(guide_df.impact.unique())
-                if x is not None and pandas.isna(x) == False and type(x) != float
+                if x is not None and pd.isna(x) == False and type(x) != float
             ]
         )
 
@@ -2459,16 +2466,16 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
         )
 
         if (
-            guide_df[~pandas.isna(guide_df.clinical_id)].clinical_id.unique()
+            guide_df[~pd.isna(guide_df.clinical_id)].clinical_id.unique()
             is not None
             and type(guide_df.clinical_id) != float
-            and list(guide_df[~pandas.isna(guide_df.clinical_id)].clinical_id.unique())
+            and list(guide_df[~pd.isna(guide_df.clinical_id)].clinical_id.unique())
         ):
             summary_df.loc[i, "clinical_id"] = ";".join(
                 [
                     x
                     for x in list(guide_df.clinical_id.unique())
-                    if x is not None and pandas.isna(x) == False and type(x) != float
+                    if x is not None and pd.isna(x) == False and type(x) != float
                 ]
             )
         else:
@@ -2476,13 +2483,13 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
 
         if (
             guide_df[
-                ~pandas.isna(guide_df.clinical_significance)
+                ~pd.isna(guide_df.clinical_significance)
             ].clinical_significance.unique()
             is not None
             and type(guide_df.clinical_significance) != float
             and list(
                 guide_df[
-                    ~pandas.isna(guide_df.clinical_significance)
+                    ~pd.isna(guide_df.clinical_significance)
                 ].clinical_significance.unique()
             )
         ):
@@ -2497,9 +2504,9 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             summary_df.loc[i, "clinical_significance"] = None
 
         if (
-            guide_df[~pandas.isna(guide_df.cosmic_id)].cosmic_id.unique() is not None
+            guide_df[~pd.isna(guide_df.cosmic_id)].cosmic_id.unique() is not None
             and type(guide_df.cosmic_id) != float
-            and list(guide_df[~pandas.isna(guide_df.cosmic_id)].cosmic_id.unique())
+            and list(guide_df[~pd.isna(guide_df.cosmic_id)].cosmic_id.unique())
         ):
             summary_df.loc[i, "cosmic_id"] = ";".join(
                 [
@@ -2512,9 +2519,9 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             summary_df.loc[i, "cosmic_id"] = None
 
         if (
-            guide_df[~pandas.isna(guide_df.clinvar_id)].clinvar_id.unique() is not None
+            guide_df[~pd.isna(guide_df.clinvar_id)].clinvar_id.unique() is not None
             and type(guide_df.clinvar_id) != float
-            and list(guide_df[~pandas.isna(guide_df.clinvar_id)].clinvar_id.unique())
+            and list(guide_df[~pd.isna(guide_df.clinvar_id)].clinvar_id.unique())
         ):
             summary_df.loc[i, "clinvar_id"] = ";".join(
                 [
@@ -2527,13 +2534,13 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
             summary_df.loc[i, "clinvar_id"] = None
         if (
             guide_df[
-                ~pandas.isna(guide_df.ancestral_populations)
+                ~pd.isna(guide_df.ancestral_populations)
             ].ancestral_populations.unique()
             is not None
             and type(guide_df.ancestral_populations) != float
             and list(
                 guide_df[
-                    ~pandas.isna(guide_df.ancestral_populations)
+                    ~pd.isna(guide_df.ancestral_populations)
                 ].ancestral_populations.unique()
             )
         ):
@@ -2547,9 +2554,9 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
         else:
             summary_df.loc[i, "ancestral_populations"] = None
         if (
-            guide_df[~pandas.isna(guide_df.Domain)].Domain.unique() is not None
+            guide_df[~pd.isna(guide_df.Domain)].Domain.unique() is not None
             and type(guide_df.Domain) != float
-            and list(guide_df[~pandas.isna(guide_df.Domain)].Domain.unique())
+            and list(guide_df[~pd.isna(guide_df.Domain)].Domain.unique())
         ):
             summary_df.loc[i, "Domain"] = ";".join(
                 [
@@ -2561,11 +2568,11 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
         else:
             summary_df.loc[i, "Domain"] = None
         if (
-            guide_df[~pandas.isna(guide_df.curated_Domain)].curated_Domain.unique()
+            guide_df[~pd.isna(guide_df.curated_Domain)].curated_Domain.unique()
             is not None
             and type(guide_df.curated_Domain) != float
             and list(
-                guide_df[~pandas.isna(guide_df.curated_Domain)].curated_Domain.unique()
+                guide_df[~pd.isna(guide_df.curated_Domain)].curated_Domain.unique()
             )
         ):
             summary_df.loc[i, "curated_Domain"] = ";".join(
@@ -2578,9 +2585,9 @@ def summarise_guides(last_df: pandas.DataFrame) -> pandas.DataFrame:
         else:
             summary_df.loc[i, "curated_Domain"] = None
         if (
-            guide_df[~pandas.isna(guide_df.PTM)].PTM.unique() is not None
+            guide_df[~pd.isna(guide_df.PTM)].PTM.unique() is not None
             and type(guide_df.PTM) != float
-            and list(guide_df[~pandas.isna(guide_df.PTM)].PTM.unique())
+            and list(guide_df[~pd.isna(guide_df.PTM)].PTM.unique())
         ):
             summary_df.loc[i, "PTM"] = ";".join(
                 [
