@@ -5,6 +5,7 @@ import typing as t
 import re
 from BEstimate.services.ensembl import Ensembl, Variant
 
+
 def find_pam_protospacer(
     sequence: str,
     pam_sequence: str,
@@ -2192,9 +2193,7 @@ def summarise_guides(last_df: pd.DataFrame) -> pd.DataFrame:
             guide_df[~pd.isna(guide_df.Regulatory_ID)].Regulatory_ID.unique()
             is not None
             and type(guide_df.Regulatory_ID) != float
-            and list(
-                guide_df[~pd.isna(guide_df.Regulatory_ID)].Regulatory_ID.unique()
-            )
+            and list(guide_df[~pd.isna(guide_df.Regulatory_ID)].Regulatory_ID.unique())
         ):
             summary_df.loc[i, "Regulatory_ID"] = ";".join(
                 [
@@ -2222,12 +2221,9 @@ def summarise_guides(last_df: pd.DataFrame) -> pd.DataFrame:
             summary_df.loc[i, "Motif_ID"] = None
 
         if (
-            guide_df[~pd.isna(guide_df.TFs_on_motif)].TFs_on_motif.unique()
-            is not None
+            guide_df[~pd.isna(guide_df.TFs_on_motif)].TFs_on_motif.unique() is not None
             and type(guide_df.TFs_on_motif) != float
-            and list(
-                guide_df[~pd.isna(guide_df.TFs_on_motif)].TFs_on_motif.unique()
-            )
+            and list(guide_df[~pd.isna(guide_df.TFs_on_motif)].TFs_on_motif.unique())
         ):
             summary_df.loc[i, "TFs_on_motif"] = ";".join(
                 [
@@ -2466,8 +2462,7 @@ def summarise_guides(last_df: pd.DataFrame) -> pd.DataFrame:
         )
 
         if (
-            guide_df[~pd.isna(guide_df.clinical_id)].clinical_id.unique()
-            is not None
+            guide_df[~pd.isna(guide_df.clinical_id)].clinical_id.unique() is not None
             and type(guide_df.clinical_id) != float
             and list(guide_df[~pd.isna(guide_df.clinical_id)].clinical_id.unique())
         ):
