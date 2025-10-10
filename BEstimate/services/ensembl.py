@@ -6,6 +6,7 @@ from Bio.pairwise2 import format_alignment
 
 from BEstimate import constants
 
+
 class Ensembl:
     """
     A class for interacting with the Ensembl REST API to retrieve genomic information.
@@ -827,7 +828,6 @@ class Ensembl:
             return None
 
 
-
 class Variant:
     """
     A class for handling variant information and VEP (Variant Effect Predictor) analysis.
@@ -1313,4 +1313,3 @@ class Variant:
                 self.clinvar_id = ", ".join(clinvar_id)
             if ancestral_populations:
                 self.ancestral_populations = ", ".join(ancestral_populations)
-

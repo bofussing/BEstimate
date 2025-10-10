@@ -3,6 +3,7 @@
 import re
 import requests
 
+
 class Uniprot:
     """
     A class for interacting with the UniProt API to retrieve protein information.
@@ -272,4 +273,3 @@ class Uniprot:
                     return mutagenesis[0]
                 else:
                     return ";".join(mutagenesis)
-
