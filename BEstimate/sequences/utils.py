@@ -3,7 +3,8 @@
 import pandas as pd
 import typing as t
 import re
-from BEstimate.services.ensembl import Ensembl, Variant
+from BEstimate.services.variant import Variant
+from BEstimate.services.ensembl import Ensembl
 
 
 def find_pam_protospacer(
