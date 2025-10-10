@@ -249,7 +249,7 @@ def run_offtargets(genome: str, file_name: str, final_df: str) -> bool:
 
     file_prefix = genome.replace(".dna.chromosome", "")
     has_off_targets = x_crispranalyser.get_off_targets(
-        input_csv_file=f"{OUTPUT_PATH}{file_name}{final_df}",
+        input_csv_file=os.path.join(OUTPUT_PATH, f"{file_name}{final_df}"),
         binary_index_file=f"{OT_PATH}grna_bin/{file_prefix}.bin",
         output_csv_file_base=f"{OUTPUT_PATH}{file_name}",
         db_file=f"{OT_PATH}crispr_db/{file_prefix}.db",
@@ -617,6 +617,7 @@ Off target analysis: %s"""
                     ensembl_object=ensembl_obj,
                     vep_df=whole_vep_df,
                     uniprot_id=CLI_ARGS["UNIPROT"],
+                    output_path=OUTPUT_PATH,
                 )
                 if uniprot_df is not None and len(uniprot_df.index) != 0:
                     print("Adding affected interface and interacting partners..")
@@ -628,19 +629,14 @@ Off target analysis: %s"""
 
                     if protein_df is not None and len(protein_df.index) != 0:
                         print("Protein Data Frame was created!")
-                        protein_df.to_csv(
-                            OUTPUT_PATH
-                            + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
+                        protein_output_file = os.path.join(
+                            OUTPUT_PATH,
+                            CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
                             + "_protein_df.csv",
-                            index=False,
                         )
+                        protein_df.to_csv(protein_output_file, index=False)
                         print(
-                            "Protein Data Frame was written in %s as %s\n"
-                            % (
-                                OUTPUT_PATH,
-                                CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
-                                + "_protein_df.csv\n",
-                            )
+                            f"Protein Data Frame was written as {protein_output_file}\n"
                         )
                     else:
                         print(

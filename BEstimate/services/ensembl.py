@@ -5,6 +5,7 @@ from Bio import pairwise2
 from Bio.pairwise2 import format_alignment
 
 from BEstimate import constants
+from BEstimate.services.uniprot import Uniprot
 
 
 class Ensembl:
@@ -621,7 +622,7 @@ class Ensembl:
 
         return in_cds
 
-    def extract_uniprot_info(self, ensembl_pid, uniprot):
+    def extract_uniprot_info(self, ensembl_pid, uniprot, output_file):
         """
         TODO documentation
         """
@@ -706,13 +707,8 @@ class Ensembl:
                     self.p_sequence = "".join(seq_request.text.split("\n")[1:])
                     ensembl_seq = self.p_sequence
 
-            # TODO: This can't be correct?
-            # OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] === OUTPUT_PATH + OUTPUT_PATH
-            # The string concatenation seems wrong
             alignment_f = open(
-                OUTPUT_PATH
-                + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
-                + "_%s_alignment.txt" % uniprot,
+                output_file,
                 "w",
             )
             alignments = list()
@@ -811,9 +807,7 @@ class Ensembl:
             # OUTPUT_PATH + args[constants.ARGS_KEY_OUTPUT_PATH] === OUTPUT_PATH + OUTPUT_PATH
             # The string concatenation seems wrong
             alignment_df.to_csv(
-                OUTPUT_PATH
-                + CLI_ARGS[constants.ARGS_KEY_OUTPUT_PATH]
-                + "_%s_alignment_df.csv" % uniprot,
+                output_file,
                 index=True,
             )
 

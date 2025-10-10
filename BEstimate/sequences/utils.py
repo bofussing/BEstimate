@@ -3,8 +3,12 @@
 import pandas as pd
 import typing as t
 import re
+import json
+import requests
+import os
 from BEstimate.services.variant import Variant
 from BEstimate.services.ensembl import Ensembl
+from BEstimate.services.uniprot import Uniprot
 
 
 def find_pam_protospacer(
@@ -1438,7 +1442,10 @@ def retrieve_vep_info(
 
 
 def annotate_edits(
-    ensembl_object: Ensembl, vep_df: pd.DataFrame, uniprot_id: str | None
+    ensembl_object: Ensembl,
+    vep_df: pd.DataFrame,
+    uniprot_id: str | None,
+    output_path: str,
 ) -> pd.DataFrame:
     """
     Annotate base edits with UniProt protein domain and PTM information.
@@ -1450,6 +1457,7 @@ def annotate_edits(
     :param ensembl_object: Ensembl object containing gene and protein sequence data
     :param vep_df: DataFrame containing VEP annotation results
     :param uniprot_id: User-specified UniProt accession ID (if provided)
+    :param output_file: File to save results
 
     :return: DataFrame enriched with UniProt protein domain and PTM annotations
 
@@ -1477,7 +1485,9 @@ def annotate_edits(
         x for x in list(vep_df["Protein_ID"].unique()) if pd.isna(x) is not True
     ][0]
     seq_mapping = ensembl_object.extract_uniprot_info(
-        ensembl_pid=ensembl_p, uniprot=uniprot
+        ensembl_pid=ensembl_p,
+        uniprot=uniprot,
+        output_file=os.path.join(output_path, f"{uniprot}_alignment_df.csv"),
     )
 
     if seq_mapping:

@@ -32,6 +32,7 @@ def search(guides: np.ndarray, sequence: str, verbose: bool = False):
     # the binary index is 0-based,
     # so we add the offset and 1 to make it 1-based as per the db
     # this follows how we numbered the WGE index
+    print(f"Found indices: {indices}")
     return [int(x) + 1 for x in indices[0].tolist()]
 
 
