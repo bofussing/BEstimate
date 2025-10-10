@@ -1,5 +1,3 @@
-
-
 def find_pam_protospacer(
     sequence: str,
     pam_sequence: str,
@@ -1186,7 +1184,6 @@ def extract_hgvs_df(
 
     hgvs_df = pandas.DataFrame(row_dicts)
     return hgvs_df
-
 
 
 def retrieve_vep_info(
