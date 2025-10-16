@@ -96,10 +96,12 @@ def get_ots_for_row(
 
     sequence = row["gRNA_Target_Sequence"]
     # Find the CRISPR IDs for the given guide sequence
+    print(f"Searching for guides:{guides} in sequence:{sequence}")
     crispr_ids = search.search(guides, sequence, True)
     # find the off-target summary for the CRISPR
     binary_sequence = utils.sequence_to_binary_encoding(sequence, 1)
     binary_reverse_sequence = align.reverse_complement_binary(binary_sequence, 20)
+    print(f"Finding off-targets...")
     summary, _ = align.find_off_targets(
         guides, binary_sequence, binary_reverse_sequence
     )
@@ -118,6 +120,7 @@ def get_ots_for_row(
         output_row["Strand"] = record[3]
         output_row["Off_target_summary"] = format_summary(summary)
         output_details.append(output_row)
+
     return output_details, output_summary
 
 
@@ -137,6 +140,7 @@ def get_off_targets(
         raise FileNotFoundError(f"database file {db_file} is not found")
     start = time.time()
     with open(binary_index_file, "rb") as guides_file:
+        print(f"Using binary index from {binary_index_file}")
         # check that the binary guides file is valid
         utils.check_file_header(guides_file.read(utils.HEADER_SIZE))
         # fetch the guides as a numpy array
@@ -145,6 +149,7 @@ def get_off_targets(
         summaries = list()
         details = list()
         with open(input_csv_file, "r") as input_csvfile:
+            print(f"Using CSV file from {input_csv_file}")
             csvreader = csv.DictReader(input_csvfile)
             headers = csvreader.fieldnames or list()
             details_headers = [
@@ -156,6 +161,7 @@ def get_off_targets(
             ]
             summaries_headers = ["exact", "mm1", "mm2", "mm3", "mm4"]
             for row in csvreader:
+                print(f"\n Processing row {row}")  # DEBUG
                 output_details, output_summary = get_ots_for_row(
                     row=row, guides=guides, db_file=db_file
                 )
@@ -164,6 +170,7 @@ def get_off_targets(
         with open(
             f"{output_csv_file_base}_ot_annotated_df.csv", "w"
         ) as output_csvfile_summaries:
+            print(f"Saving results to {output_csv_file_base}_ot_annotated_df.csv")
             csv_summaries_writer = csv.DictWriter(
                 output_csvfile_summaries,
                 fieldnames=[*headers, *summaries_headers],
