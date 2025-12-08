@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2025-12-08
+### Changed
+- Service layer factored out of BEstimate.py and moved into separate files:
+  - Ensembl
+  - Uniprot
+  - Variant (Variant Effect Predictor)
+
 ## [1.1.1] - 2025-09-24
 ### Added
 - Python type hints throughout codebase
